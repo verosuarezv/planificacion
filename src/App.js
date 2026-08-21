@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef } from "react";
-
+ 
 // ─── PALETA ──────────────────────────────────────────────────────────────────
 const C = {
   bg:"#f4f5f7", surface:"#ffffff", border:"#e4e7ec", borderHover:"#c8cdd8",
@@ -18,16 +18,16 @@ const C = {
   // grupos de columnas — bordes superiores
   gVenta:"#2563eb", gProd:"#7c3aed", gStock:"#0f766e",
 };
-
+ 
 // helpers de estado
-const ESTADOS = {
+const _ESTADOS = {
   sobrestockRiesgo: C.sobRiesgo,
   sobrestockAlerta: C.sobAlerta,
   ok:               C.ok,
   substockAlerta:   C.subAlerta,
   faltante:         C.faltante,
 };
-
+ 
 // ─── POLÍTICA DE STOCK ───────────────────────────────────────────────────────
 const POLITICA_DEFAULT = {
   sobrestockRiesgo: { min:0.80, ...C.sobRiesgo },
@@ -37,7 +37,7 @@ const POLITICA_DEFAULT = {
   faltante:         { min:0,    ...C.faltante },
   sinForecast:      { min:null, color:"#94a3b8", bg:"#f8fafc", border:"#e2e8f0", label:"Sin forecast" },
 };
-
+ 
 function getEstado(diasStock, vidaUtil, fcst) {
   if (!fcst || fcst === 0) return "sinForecast";
   const pct = vidaUtil > 0 ? diasStock / vidaUtil : 0;
@@ -47,9 +47,9 @@ function getEstado(diasStock, vidaUtil, fcst) {
   if (pct >= 0.01) return "substockAlerta";
   return "faltante";
 }
-
-
-
+ 
+ 
+ 
 // ─── MAESTRO INICIAL ─────────────────────────────────────────────────────────
 const MAESTRO_INI = [
   // CHORIZOS FRESCOS — permiteArrastre: false (VU 12d)
@@ -116,10 +116,10 @@ const MAESTRO_INI = [
   { sku:"41",   desc:"Queso de Cerdo Mitades",          pasta:"PJA1200", sector:"JAMÓN",    familia:"SANDWICHERA", vidaUtil:60,  kgBatch:302,  kgBatchMin:302,  leadTime:4 },
   { sku:"701",  desc:"Panceta Americana",               pasta:"pin003",  sector:"JAMÓN",    familia:"PANCETA AM.", vidaUtil:60,  kgBatch:3768, kgBatchMin:1884, leadTime:4 },
 ];
-
+ 
 // Quitar duplicados por sku
 const MAESTRO_UNICO = MAESTRO_INI.filter((a,i,arr)=>arr.findIndex(b=>b.sku===a.sku)===i);
-
+ 
 // ─── DATOS INICIALES DE MUESTRA ──────────────────────────────────────────────
 const FCST_ACTUAL_INI = {
   "108":360.0,
@@ -630,8 +630,8 @@ const STOCK_INI = {
   "971":747.24,
   "98":190.72,
 };
-
-
+ 
+ 
 const PROD_ACUM_INI  = Object.fromEntries(Object.keys(FCST_ACTUAL_INI).map(k=>[k,0]));
 const PROD_PEND_INI = {
   "109":116.2,
@@ -981,10 +981,10 @@ const PEDIDOS_PEND_INI = {
   "958":2.88,
   "96":10.0,
 };
-
+ 
 // ─── UI ATOMS ────────────────────────────────────────────────────────────────
 const COL_W = 72; // ancho uniforme de columnas de datos en px
-
+ 
 const Th = ({children,right,center,style:s})=>(
   <th style={{padding:"5px 6px",textAlign:"center",
     color:C.muted,fontWeight:600,fontSize:10,letterSpacing:"0.05em",
@@ -994,7 +994,7 @@ const Th = ({children,right,center,style:s})=>(
     {children}
   </th>
 );
-
+ 
 // Celda de dato — sin recuadro, centrada
 const Tv = ({children,right,center,dim,mono,color,style:s})=>(
   <td style={{padding:"6px 6px",textAlign:"center",
@@ -1003,14 +1003,14 @@ const Tv = ({children,right,center,dim,mono,color,style:s})=>(
     {children}
   </td>
 );
-
+ 
 // Celda de input — centrada
 const Ti = ({children,right})=>(
   <td style={{padding:"3px 4px",textAlign:"center",width:COL_W}}>
     {children}
   </td>
 );
-
+ 
 // Input editable — ancho uniforme
 const Inp = ({value,onChange,width=64})=>(
   <input type="number" value={Math.round(value)||0} min={0}
@@ -1019,7 +1019,7 @@ const Inp = ({value,onChange,width=64})=>(
       borderRadius:5,background:C.inputBg,color:C.text,fontSize:12,
       textAlign:"center",outline:"none",fontFamily:"inherit"}}/>
 );
-
+ 
 // Valor de solo lectura con hint debajo
 const Val = ({v,hint,color,bold})=>(
   <div style={{textAlign:"center"}}>
@@ -1029,7 +1029,7 @@ const Val = ({v,hint,color,bold})=>(
     {hint&&<div style={{fontSize:9,color:C.muted,marginTop:1}}>{hint}</div>}
   </div>
 );
-
+ 
 // Badge de estado — compacto, solo color + texto
 const Badge = ({estado})=>{
   const e = POLITICA_DEFAULT[estado];
@@ -1043,7 +1043,7 @@ const Badge = ({estado})=>{
     </span>
   );
 };
-
+ 
 // Pill de días con color de estado
 const DiasPill = ({dias,estado})=>{
   const e = POLITICA_DEFAULT[estado]||{};
@@ -1052,8 +1052,8 @@ const DiasPill = ({dias,estado})=>{
     <span style={{color:e.color||C.text,fontWeight:600,fontSize:12}}>{txt}</span>
   );
 };
-
-const SectionBar = ({children,right})=>(
+ 
+const _SectionBar = ({children,right})=>(
   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",margin:"20px 0 12px"}}>
     <div style={{display:"flex",alignItems:"center",gap:8}}>
       <div style={{width:3,height:16,background:C.accent,borderRadius:2}}/>
@@ -1062,13 +1062,13 @@ const SectionBar = ({children,right})=>(
     {right&&<div>{right}</div>}
   </div>
 );
-
+ 
 // ─── KPI PANEL — 3 grupos ────────────────────────────────────────────────────
 function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total,alertasS,alertasS2}) {
   const fmt = n => Math.round(n).toLocaleString("es-UY");
   const pctAcum = totFcst>0?Math.round(totAcum/totFcst*100):0;
   const pctProdAcum = totProdS>0?Math.round(totProdAcum/totProdS*100):0;
-
+ 
   const grupo = (titulo,color,children) => (
     <div style={{background:C.surface,border:`1px solid ${C.hairline}`,borderRadius:10,
       padding:"14px 18px",flex:1,minWidth:220,borderTop:`3px solid ${color}`}}>
@@ -1077,7 +1077,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
       {children}
     </div>
   );
-
+ 
   const fila = (label,value,hint,bold) => (
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",
       marginBottom:6}}>
@@ -1088,7 +1088,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
       </div>
     </div>
   );
-
+ 
   // Barra de progreso
   const barra = (pct,color) => (
     <div style={{height:4,background:C.faint,borderRadius:2,marginBottom:10,overflow:"hidden"}}>
@@ -1096,7 +1096,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
         background:pct>100?"#dc2626":color,borderRadius:2,transition:"width 0.3s"}}/>
     </div>
   );
-
+ 
   return (
     <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>
       {/* VENTA */}
@@ -1106,7 +1106,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
         {fila("Facturado acum.",`${fmt(totAcum)} kg`,`${pctAcum}% del fcst`)}
         {fila("Fcst S+1",`${fmt(fcstS2Total)} kg`)}
       </>)}
-
+ 
       {/* PRODUCCIÓN */}
       {grupo("Producción","#7c3aed",<>
         {fila("Plan S",`${fmt(totProdS)} kg`,null,true)}
@@ -1114,7 +1114,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
         {fila("Prod. acum. S",`${fmt(totProdAcum)} kg`,`${pctProdAcum}% del plan`)}
         {fila("Prod. óptima S+1",`${fmt(totProdOptS2)} kg`)}
       </>)}
-
+ 
       {/* STOCK / ALERTAS */}
       {grupo("Alertas de stock","#dc2626",<>
         <div style={{marginBottom:8}}>
@@ -1157,52 +1157,55 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
     </div>
   );
 }
-
+ 
 // ─── LÓGICA CENTRAL ──────────────────────────────────────────────────────────
 function calcDias(kgStock, kgVentaSemanal) {
   if (kgVentaSemanal <= 0) return kgStock > 0 ? 999 : 0;
   return (kgStock / kgVentaSemanal) * 7;
 }
-
+ 
 function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPend,
   prodAcum, prodPend, prodS2, conArrastre, usarPromedio}) {
-
+ 
   const vu      = art.vidaUtil;
   const pctObj  = (art.pctVUObj != null && art.pctVUObj > 0) ? art.pctVUObj : 0.20;
   const diasObj = vu * pctObj;
-
+  const tme     = art.tme || 0;
+  // Alerta: el stock objetivo supera el TME (queda menos VU de la que exige el cliente)
+  const alertaTME = tme > 0 && diasObj > tme;
+ 
   // ── STOCK ACTUAL ──
   const stkActual    = stockActual[art.sku] || 0;
   const fcst         = fcstS[art.sku] || 0;
   const diasActual   = calcDias(stkActual, fcst);
   const estadoActual = getEstado(diasActual, vu, fcst);
-
+ 
   // ── VENTA S ──
   const factAcum  = ventaAcum[art.sku] || 0;
   const pedidos   = pedidosPend[art.sku] || 0;
   const fcstPend  = fcst - factAcum - pedidos;
   const ventaTotalS = factAcum + pedidos + Math.max(0, fcstPend);
-
+ 
   // ── PRODUCCIÓN S ──
   const pAcum = prodAcum[art.sku] || 0;
   // Prod. pendiente S: viene del CSV cargado en pestaña Producción, sino es 0
   const pPend = prodPend[art.sku] || 0;
   const prodTotalS = pAcum + pPend; // informativo
-
+ 
   // ── STOCK CIERRE S ──
   const stkCierreS = stkActual - Math.max(0, fcstPend) + pPend;
-
+ 
   // ── VENTA S+1 ──
   const fcstS2base = fcstS2[art.sku] || 0;
   const permiteArrastre = art.permiteArrastre !== false && (art.vidaUtil > 12);
   const arrastre   = (conArrastre && permiteArrastre)
     ? Math.max(0, fcstPend - Math.max(0, stkCierreS)) : 0;
   const fcstS2v    = fcstS2base + arrastre;
-
+ 
   // Días stock cierre S: medido contra fcst S+1 (es lo que el stock tiene que cubrir)
   const diasS    = calcDias(Math.max(0, stkCierreS), fcstS2v);
   const estadoS  = getEstado(diasS, vu, fcstS2v);
-
+ 
   // ── PRODUCCIÓN S+1 ──
   const fcstS3v = fcstS3[art.sku] || 0;
   // Stock objetivo: usa promedio de S, S+1, S+2 o solo S+2 según toggle
@@ -1214,26 +1217,26 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const prodS2val = (prodS2[art.sku] !== undefined && prodS2[art.sku] !== null)
     ? (prodS2[art.sku] || 0)
     : prodOptS2;
-
+ 
   // ── STOCK CIERRE S+1 ──
   const stkCierreS2 = Math.max(0, stkCierreS) - fcstS2v + prodS2val;
   // Días medidos contra fcst S+2
   const diasS2      = calcDias(Math.max(0, stkCierreS2), fcstS3v);
   const estadoS2    = getEstado(diasS2, vu, fcstS3v);
-
+ 
   return {
     stkActual, diasActual, estadoActual,
     fcst, factAcum, pedidos, fcstPend, ventaTotalS,
     pAcum, pPend, prodTotalS,
     stkCierreS, diasS, estadoS,
-    fcstS2v, arrastre, fcstS3v,
+    fcstS3v,
     fcstS2v, arrastre,
     prodOptS2, prodS2val,
     stkCierreS2, diasS2, estadoS2,
-    diasObj,
+    diasObj, tme, alertaTME,
   };
 }
-
+ 
 // ─── UTILIDADES CSV ──────────────────────────────────────────────────────────
 function parsearCSV(texto) {
   // Detecta separador: tab, punto y coma o coma
@@ -1242,14 +1245,14 @@ function parsearCSV(texto) {
     .filter(l=>l.trim())
     .map(l=>l.split(sep).map(c=>c.trim().replace(/^["']|["']$/g,"")));
 }
-
+ 
 function parseKg(raw="") {
   // Maneja formato europeo: "3.199,5" → 3199.5 o "3.199" → 3199
   const s = raw.trim();
   if (!s || s==="-") return 0;
   return parseFloat(s.replace(/\./g,"").replace(",",".")) || 0;
 }
-
+ 
 function descargarCSV(nombre, contenido) {
   try {
     const blob = new Blob(["\uFEFF" + contenido], { type: "text/csv;charset=utf-8;" });
@@ -1266,22 +1269,26 @@ function descargarCSV(nombre, contenido) {
     alert("No se pudo generar el archivo: " + err.message);
   }
 }
-
+ 
 function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga, plantillaNombre, plantillaContenido, children }) {
-  const [msg, setMsg]   = useState(null);
-  const inputRef        = useRef();
-
+  const [msg, setMsg]         = useState(null);
+  const [noEncontrados, setNoEncontrados] = useState([]);
+  const [verDetalle, setVerDetalle]       = useState(false);
+  const inputRef = useRef();
+ 
   function leerArchivo(file) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = e => {
       try {
         const rows = parsearCSV(e.target.result);
-        const { ok, noMatch, err } = onCargar(rows);
+        const { ok, noMatch, err, skusNoMatch=[] } = onCargar(rows);
         const partes = [`✓ ${ok} SKUs actualizados`];
         if (noMatch>0) partes.push(`${noMatch} no encontrados en maestro`);
         if (err>0)     partes.push(`${err} filas con error`);
         setMsg({ tipo:"ok", texto:partes.join(" · "), ts:new Date().toLocaleString("es-UY") });
+        setNoEncontrados(skusNoMatch);
+        setVerDetalle(false);
       } catch(ex) {
         setMsg({ tipo:"err", texto:"Error al leer el archivo: "+ex.message });
       }
@@ -1289,7 +1296,7 @@ function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga,
     reader.readAsText(file, "UTF-8");
     inputRef.current.value="";
   }
-
+ 
   return (
     <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,
       padding:"18px 20px",marginBottom:16}}>
@@ -1318,10 +1325,16 @@ function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga,
             ↓ Plantilla CSV
           </button>
           {msg&&(
-            <div style={{fontSize:10,color:msg.tipo==="ok"?C.ok.color:C.faltante.color,
-              textAlign:"right",maxWidth:200,lineHeight:1.4}}>
-              {msg.texto}
+            <div style={{fontSize:10,textAlign:"right",maxWidth:220,lineHeight:1.4}}>
+              <div style={{color:msg.tipo==="ok"?C.ok.color:C.faltante.color}}>{msg.texto}</div>
               {msg.ts&&<div style={{color:C.muted,marginTop:2}}>{msg.ts}</div>}
+              {noEncontrados.length>0&&(
+                <button onClick={()=>setVerDetalle(v=>!v)}
+                  style={{marginTop:4,background:"none",border:`1px solid ${C.border}`,
+                    color:"#b45309",padding:"2px 8px",borderRadius:4,cursor:"pointer",fontSize:10}}>
+                  {verDetalle?"Ocultar":"Ver"} {noEncontrados.length} no encontrados
+                </button>
+              )}
             </div>
           )}
           {ultimaCarga&&!msg&&(
@@ -1331,10 +1344,31 @@ function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga,
           )}
         </div>
       </div>
+      {/* Panel detalle no encontrados */}
+      {verDetalle&&noEncontrados.length>0&&(
+        <div style={{marginTop:12,padding:"10px 14px",background:"#fffbeb",
+          border:"1px solid #fde68a",borderRadius:7}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#92400e",marginBottom:6}}>
+            SKUs no encontrados en el maestro — no se cargaron
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+            {noEncontrados.map(sku=>(
+              <span key={sku} style={{background:"#fef3c7",color:"#92400e",
+                border:"1px solid #fde68a",padding:"1px 7px",borderRadius:4,
+                fontSize:10,fontFamily:"monospace"}}>
+                {sku}
+              </span>
+            ))}
+          </div>
+          <div style={{fontSize:10,color:"#b45309",marginTop:8}}>
+            Para incluirlos: agregá estos SKUs al Maestro y volvé a importar el CSV.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
+ 
 // ─── MÓDULO VENTA ─────────────────────────────────────────────────────────────
 function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcstS3, setFcstS3,
   ventaAcum, setVentaAcum, pedidosPend, setPedidosPend }) {
@@ -1342,11 +1376,11 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
   const [ultimaCargaVA,   setUltimaCargaVA]   = useState(null);
   const [ultimaCargaPP,   setUltimaCargaPP]   = useState(null);
   const [verSector, setVerSector]             = useState(false);
-
+ 
   const skuSet = new Set(maestro.map(a=>a.sku));
-
+ 
   function cargarFcst(rows) {
-    let ok=0, noMatch=0;
+    let ok=0, noMatch=0; const skusNoMatch=[];
     const s1={}, s2={}, s3={};
     rows.forEach(r=>{
       if (r.length<2) return;
@@ -1354,17 +1388,17 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
       if (!sku || sku.toLowerCase()==="sku") return;
       const v1=parseKg(r[1]), v2=parseKg(r[2]||"0"), v3=parseKg(r[3]||"0");
       s1[sku]=v1; s2[sku]=v2; s3[sku]=v3;
-      if (skuSet.has(sku)) ok++; else noMatch++;
+      if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
     });
     setFcstActual(p=>({...p,...s1}));
     setFcstS2(p=>({...p,...s2}));
     setFcstS3(p=>({...p,...s3}));
     setUltimaCargaFcst(new Date().toLocaleString("es-UY"));
-    return {ok,noMatch,err:0};
+    return {ok,noMatch,err:0,skusNoMatch};
   }
-
+ 
   function cargarVentaAcum(rows) {
-    let ok=0, noMatch=0;
+    let ok=0, noMatch=0; const skusNoMatch=[];
     const va={};
     rows.forEach(r=>{
       if (r.length<2) return;
@@ -1372,15 +1406,15 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
       if (!sku || sku.toLowerCase()==="sku" || sku.toLowerCase()==="número de artículo") return;
       const kg = parseKg(r[1]);
       va[sku] = kg;
-      if (skuSet.has(sku)) ok++; else noMatch++;
+      if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
     });
     setVentaAcum(p=>({...p,...va}));
     setUltimaCargaVA(new Date().toLocaleString("es-UY"));
-    return {ok,noMatch,err:0};
+    return {ok,noMatch,err:0,skusNoMatch};
   }
-
+ 
   function cargarPedidosPend(rows) {
-    let ok=0, noMatch=0;
+    let ok=0, noMatch=0; const skusNoMatch=[];
     const pp={};
     rows.forEach(r=>{
       if (r.length<2) return;
@@ -1388,17 +1422,17 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
       if (!sku || sku.toLowerCase()==="sku" || sku.toLowerCase()==="número de artículo") return;
       const kg = parseKg(r[1]);
       pp[sku] = kg;
-      if (skuSet.has(sku)) ok++; else noMatch++;
+      if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
     });
     setPedidosPend(p=>({...p,...pp}));
     setUltimaCargaPP(new Date().toLocaleString("es-UY"));
-    return {ok,noMatch,err:0};
+    return {ok,noMatch,err:0,skusNoMatch};
   }
-
+ 
   const plantillaContenido = "SKU;S_actual;S+1;S+2\n" + maestro.map(a=>`${a.sku};0;0;0`).join("\n");
   const plantillaVA = "SKU;Venta_acum_kg\n" + maestro.map(a=>`${a.sku};0`).join("\n");
   const plantillaPP = "SKU;Pedidos_pend_kg\n" + maestro.map(a=>`${a.sku};0`).join("\n");
-
+ 
   const tot1  = maestro.reduce((a,r)=>a+(fcstActual[r.sku]||0),0);
   const tot2  = maestro.reduce((a,r)=>a+(fcstS2[r.sku]||0),0);
   const tot3  = maestro.reduce((a,r)=>a+(fcstS3[r.sku]||0),0);
@@ -1406,11 +1440,10 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
   const pct21 = tot1>0 ? Math.round((tot2-tot1)/tot1*100) : 0;
   const pct32 = tot2>0 ? Math.round((tot3-tot2)/tot2*100) : 0;
   const pctVA = tot1>0 ? Math.round(totVA/tot1*100) : 0;
-
+ 
   const pctColor = p => p>5?"#15803d":p<-5?"#b91c1c":"#d97706";
-  const pctFmt   = p => (p>0?"+":"")+p+"%";
   const fmt      = n => Math.round(n).toLocaleString("es-UY");
-
+ 
   // Barra de avance
   const BarraAvance = ({pct,color}) => (
     <div style={{marginTop:6}}>
@@ -1420,7 +1453,7 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
       <div style={{fontSize:10,color,fontWeight:600,marginTop:2}}>{pct}% de avance</div>
     </div>
   );
-
+ 
   // Desglose por sector
   const sectores = [...new Set(maestro.map(a=>a.sector))];
   const porSector = sectores.map(sec=>{
@@ -1435,24 +1468,24 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
       pctVA: s1>0?Math.round(va/s1*100):0,
       pctTotal: tot1>0?Math.round(s1/tot1*100):0 };
   }).sort((a,b)=>b.s1-a.s1);
-
+ 
   return (
     <div>
       <CargaCSV titulo="Forecast comercial"
         descripcion="CSV con 4 columnas: SKU · Fcst S · Fcst S+1 · Fcst S+2. Una fila por producto. Separador: punto y coma."
         color={C.gVenta} onCargar={cargarFcst} ultimaCarga={ultimaCargaFcst}
         plantillaNombre="forecast.csv" plantillaContenido={plantillaContenido}/>
-
+ 
       <CargaCSV titulo="Venta acumulada — SAP"
         descripcion="CSV con 2 columnas: SKU · kg facturados acumulados a la fecha. Mismo formato de exportación SAP que el stock."
         color="#0891b2" onCargar={cargarVentaAcum} ultimaCarga={ultimaCargaVA}
         plantillaNombre="venta_acumulada.csv" plantillaContenido={plantillaVA}/>
-
+ 
       <CargaCSV titulo="Pedidos pendientes — SAP"
         descripcion="CSV con 2 columnas: SKU · kg en pedidos confirmados pero aún no facturados."
         color="#0369a1" onCargar={cargarPedidosPend} ultimaCarga={ultimaCargaPP}
         plantillaNombre="pedidos_pendientes.csv" plantillaContenido={plantillaPP}/>
-
+ 
       {/* 4 tarjetas */}
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
         {/* Fcst S */}
@@ -1490,7 +1523,7 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
           </div>
         </div>
       </div>
-
+ 
       {/* Desglose por sector */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
         <div style={{fontSize:12,fontWeight:600,color:C.text}}>Desglose por sector</div>
@@ -1500,7 +1533,7 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
           {verSector?"Ocultar":"Ver desglose"}
         </button>
       </div>
-
+ 
       {verSector&&(
         <div style={{overflowX:"auto",borderRadius:8,border:`1px solid ${C.border}`,marginBottom:16}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
@@ -1551,7 +1584,7 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
           </table>
         </div>
       )}
-
+ 
       {/* Tabla detalle SKU */}
       <div style={{fontSize:11,color:C.muted,marginBottom:8}}>Detalle por SKU — editable celda a celda</div>
       <div style={{overflowX:"auto",borderRadius:8,border:`1px solid ${C.border}`,maxHeight:420,overflowY:"auto"}}>
@@ -1596,35 +1629,34 @@ function PanelFCST({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
     </div>
   );
 }
-
+ 
 // ─── MÓDULO PRODUCCIÓN ────────────────────────────────────────────────────────
 function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prodS2, setProdS2, fcstActual }) {
   const [ultimaCarga, setUltimaCarga] = useState(null);
   const [verSector, setVerSector]     = useState(false);
   const skuSet = new Set(maestro.map(a=>a.sku));
-
+ 
   function cargarProd(rows) {
-    let ok=0, noMatch=0;
+    let ok=0, noMatch=0; const skusNoMatch=[];
     const pend={}, s2={};
     rows.forEach(r=>{
       if (r.length<2) return;
       const sku=r[0].trim();
       if (!sku||sku.toLowerCase()==="sku") return;
       pend[sku]=parseKg(r[1]); s2[sku]=parseKg(r[2]||"0");
-      if (skuSet.has(sku)) ok++; else noMatch++;
+      if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
     });
     setProdPend(p=>({...p,...pend}));
     setProdS2(p=>({...p,...s2}));
     setUltimaCarga(new Date().toLocaleString("es-UY"));
-    return {ok,noMatch,err:0};
+    return {ok,noMatch,err:0,skusNoMatch};
   }
-
+ 
   const plantillaContenidoProd = "SKU;Prod_pend_S;Prod_S+1\n" + maestro.map(a=>`${a.sku};0;0`).join("\n");
-
+ 
   const fmt      = n => Math.round(n).toLocaleString("es-UY");
   const pctColor = p => p>5?"#15803d":p<-5?"#b91c1c":"#d97706";
-  const pctFmt   = p => (p>0?"+":"")+p+"%";
-
+ 
   const totAcum  = maestro.reduce((a,r)=>a+(prodAcum[r.sku]||0),0);
   const totPend  = maestro.reduce((a,r)=>a+(prodPend[r.sku]||0),0);
   const totTotal = totAcum + totPend;
@@ -1632,7 +1664,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
   const totFcst  = maestro.reduce((a,r)=>a+(fcstActual[r.sku]||0),0);
   const pctAcumTotal = totTotal>0?Math.round(totAcum/totTotal*100):0;
   const pctTotalFcst = totFcst>0?Math.round(totTotal/totFcst*100):0;
-
+ 
   // Barra de avance
   const BarraAvance = ({pct,color}) => (
     <div style={{marginTop:6}}>
@@ -1642,7 +1674,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
       <div style={{fontSize:10,color,fontWeight:600,marginTop:2}}>{pct}%</div>
     </div>
   );
-
+ 
   // Desglose por sector
   const sectores = [...new Set(maestro.map(a=>a.sector))];
   const porSector = sectores.map(sec=>{
@@ -1657,14 +1689,14 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
       pctTotFcst: fcst>0?Math.round(total/fcst*100):0,
       pctDel: totTotal>0?Math.round(total/totTotal*100):0 };
   }).sort((a,b)=>b.total-a.total);
-
+ 
   return (
     <div>
       <CargaCSV titulo="Plan de producción"
         descripcion="CSV con 3 columnas: SKU · Prod pendiente S · Prod S+1. Separador: punto y coma."
         color={C.gProd} onCargar={cargarProd} ultimaCarga={ultimaCarga}
         plantillaNombre="produccion.csv" plantillaContenido={plantillaContenidoProd}/>
-
+ 
       {/* 4 tarjetas */}
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
         {/* Prod acum */}
@@ -1694,7 +1726,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
           <div style={{fontSize:10,color:C.muted,marginTop:6}}>plan confirmado planta</div>
         </div>
       </div>
-
+ 
       {/* Desglose por sector */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
         <div style={{fontSize:12,fontWeight:600,color:C.text}}>Desglose por sector</div>
@@ -1704,7 +1736,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
           {verSector?"Ocultar":"Ver desglose"}
         </button>
       </div>
-
+ 
       {verSector&&(
         <div style={{overflowX:"auto",borderRadius:8,border:`1px solid ${C.border}`,marginBottom:16}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
@@ -1752,7 +1784,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
           </table>
         </div>
       )}
-
+ 
       {/* Tabla detalle SKU */}
       <div style={{fontSize:11,color:C.muted,marginBottom:8}}>Detalle por SKU — editable celda a celda</div>
       <div style={{overflowX:"auto",borderRadius:8,border:`1px solid ${C.border}`,maxHeight:420,overflowY:"auto"}}>
@@ -1794,37 +1826,38 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
     </div>
   );
 }
-
+ 
 // ─── MÓDULO PRINCIPAL ────────────────────────────────────────────────────────
 function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcstS3,
   stockActual, setStockActual, ventaAcum, setVentaAcum,
   pedidosPend, setPedidosPend, prodAcum, setProdAcum,
   prodPend, setProdPend, prodS2, setProdS2 }) {
-
-  const [filtroSector, setFiltroSector] = useState("Todos");
-  const [filtroEstado, setFiltroEstado] = useState("Todos");
+ 
+  const [filtroSector, setFiltroSector]   = useState("Todos");
+  const [filtroEstado, setFiltroEstado]   = useState("Todos");
+  const [filtroReventa, setFiltroReventa] = useState("Todos"); // Todos / Propio / Reventa
+  const [filtroVacio, setFiltroVacio]     = useState("Todos"); // Todos / Si / No
   const [buscar, setBuscar]             = useState("");
   const [orden, setOrden]               = useState({ col:"desc", dir:"asc" });
   const [mostrarS2, setMostrarS2]       = useState(true);
   const [conArrastre, setConArrastre]   = useState(false);
   const [usarPromedio, setUsarPromedio] = useState(false);
   const sectores = ["Todos",...new Set(maestro.map(a=>a.sector))];
-
+ 
   const ctx = { fcstS:fcstActual, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPend,
                 prodAcum, prodPend, prodS2, conArrastre, usarPromedio };
-
-  const rows = useMemo(()=>
-    maestro.map(art=>({ art, ...calcRow(art, ctx) }))
-  ,[maestro, fcstActual, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPend,
-    prodAcum, prodPend, prodS2, conArrastre, usarPromedio]);
-
+ 
+  const rows = maestro.map(art=>({ art, ...calcRow(art, ctx) }));
+ 
   const rowsFilt = rows.filter(r=>{
     const sOk = filtroSector==="Todos"||r.art.sector===filtroSector;
     const eOk = filtroEstado==="Todos" || r.estadoActual===filtroEstado;
+    const rOk = filtroReventa==="Todos" || (filtroReventa==="Reventa"?r.art.reventa:!r.art.reventa);
+    const vOk = filtroVacio==="Todos"   || (filtroVacio==="Si"?r.art.vacio:!r.art.vacio);
     const bOk = !buscar.trim() ||
       r.art.sku.toLowerCase().includes(buscar.toLowerCase()) ||
       r.art.desc.toLowerCase().includes(buscar.toLowerCase());
-    return sOk&&eOk&&bOk;
+    return sOk&&eOk&&rOk&&vOk&&bOk;
   }).sort((a,b)=>{
     const d = orden.dir==="asc" ? 1 : -1;
     if (orden.col==="sku")  return d * String(a.art.sku).localeCompare(String(b.art.sku), undefined, {numeric:true});
@@ -1842,15 +1875,15 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
     }
     return 0;
   });
-
+ 
   // Toggle de orden
   function toggleOrden(col) {
     setOrden(o => o.col===col ? { col, dir: o.dir==="asc"?"desc":"asc" } : { col, dir:"asc" });
   }
   const sortIcon = col => orden.col===col ? (orden.dir==="asc"?" ↑":" ↓") : " ↕";
-
+ 
   const fmt = n => Math.round(n).toLocaleString("es-UY");
-
+ 
   // Totales para KpiPanel
   const totFcst      = rows.reduce((a,r)=>a+r.fcst,0);
   const totAcum      = rows.reduce((a,r)=>a+r.factAcum,0);
@@ -1858,7 +1891,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
   const totProdAcum  = rows.reduce((a,r)=>a+r.pAcum,0);
   const totProdOptS2 = rows.reduce((a,r)=>a+r.prodOptS2,0);
   const fcstS2Total  = rows.reduce((a,r)=>a+r.fcstS2v,0);
-
+ 
   // Conteo de alertas por estado
   const cuentaAlertas = (campo) => {
     const c={};
@@ -1867,7 +1900,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
   };
   const alertasS  = cuentaAlertas("estadoS");
   const alertasS2 = cuentaAlertas("estadoS2");
-
+ 
   // Header de grupo — Opción A: fondo blanco, color solo en texto y borde superior
   const GrpTh = ({label,cols,color,sep}) => (
     <th colSpan={cols} style={{padding:"5px 10px",textAlign:"center",fontSize:9,fontWeight:700,
@@ -1880,18 +1913,18 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
       {label}
     </th>
   );
-
+ 
   // Fondo de fila — siempre blanco, estado visible solo en badges y números
   const rowBg = () => "#fff";
-
+ 
   const sel = {background:"#f0f4ff"};
-
+ 
   return (
     <div>
       <KpiPanel totFcst={totFcst} totAcum={totAcum} totProdS={totProdS}
         totProdAcum={totProdAcum} totProdOptS2={totProdOptS2} fcstS2Total={fcstS2Total}
         alertasS={alertasS} alertasS2={alertasS2}/>
-
+ 
       {/* Controles */}
       <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
         <input placeholder="Buscar por código o descripción..." value={buscar}
@@ -1910,6 +1943,20 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
           {Object.entries(POLITICA_DEFAULT).map(([k,v])=>(
             <option key={k} value={k}>{v.label}</option>
           ))}
+        </select>
+        <select value={filtroReventa} onChange={e=>setFiltroReventa(e.target.value)}
+          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
+            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
+          <option value="Todos">Propio + Reventa</option>
+          <option value="Propio">Solo producción propia</option>
+          <option value="Reventa">Solo reventa</option>
+        </select>
+        <select value={filtroVacio} onChange={e=>setFiltroVacio(e.target.value)}
+          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
+            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
+          <option value="Todos">Con y sin vacío</option>
+          <option value="Si">Solo al vacío</option>
+          <option value="No">Sin vacío</option>
         </select>
         <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.textDim,cursor:"pointer"}}>
           <input type="checkbox" checked={mostrarS2} onChange={e=>setMostrarS2(e.target.checked)}/>
@@ -1935,7 +1982,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
         )}
         <div style={{fontSize:11,color:C.muted,marginLeft:"auto"}}>{rowsFilt.length} artículos</div>
       </div>
-
+ 
       {/* Leyenda filtro */}
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
         {Object.entries(POLITICA_DEFAULT).map(([k,v])=>(
@@ -1949,7 +1996,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
           </span>
         ))}
       </div>
-
+ 
       {/* Tabla */}
       <div style={{overflowX:"auto",borderRadius:10,border:`1px solid ${C.border}`,
         maxHeight:600,overflowY:"auto",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
@@ -2012,16 +2059,16 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
               stkCierreS,diasS,estadoS,
               fcstS2v,fcstS3v,arrastre,prodOptS2,prodS2val,
               stkCierreS2,diasS2,estadoS2,diasObj})=>{
-
+ 
               const bg = rowBg(estadoActual);
               const sep = {borderLeft:`1px solid ${C.hairline}`};
-
+ 
               return (
                 <tr key={art.sku}
                   style={{borderTop:`1px solid ${C.hairline}`,background:bg}}
                   onMouseEnter={e=>e.currentTarget.style.background="#f8fafc"}
                   onMouseLeave={e=>e.currentTarget.style.background=bg}>
-
+ 
                   {/* SKU — sticky izquierda */}
                   <td style={{padding:"6px 8px",position:"sticky",left:0,zIndex:1,
                     background:"inherit",borderRight:`1px solid ${C.hairline}`,
@@ -2029,7 +2076,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                     whiteSpace:"nowrap",textAlign:"center",width:64,minWidth:64}}>
                     {art.sku}
                   </td>
-
+ 
                   {/* DESCRIPCIÓN — sticky después del SKU */}
                   <td style={{padding:"6px 10px",position:"sticky",left:64,zIndex:1,
                     background:"inherit",borderRight:`2px solid ${C.border}`,
@@ -2042,14 +2089,14 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                       VU {art.vidaUtil}d · obj {diasObj.toFixed(0)}d
                     </div>
                   </td>
-
+ 
                   {/* STOCK ACTUAL — solo lectura */}
                   <Tv right color={POLITICA_DEFAULT[estadoActual]?.color}>
                     <Val v={stkActual} color={POLITICA_DEFAULT[estadoActual]?.color} bold/>
                   </Tv>
                   <Tv right><DiasPill dias={diasActual} estado={estadoActual}/></Tv>
                   <Tv><Badge estado={estadoActual}/></Tv>
-
+ 
                   {/* VENTA S — todo solo lectura */}
                   <Tv right dim style={sep}><Val v={fcst}/></Tv>
                   <Tv right dim><Val v={factAcum}
@@ -2062,14 +2109,14 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                     </span>
                     {fcstPend<0&&<div style={{fontSize:9,color:"#b45309"}}>sobreventa</div>}
                   </Tv>
-
+ 
                   {/* PRODUCCIÓN S — acum solo lectura, pend editable */}
                   <Tv right dim style={sep}><Val v={pAcum}/></Tv>
                   <Ti right>
                     <Inp value={Math.round(pPend)} width={75}
                       onChange={v=>setProdPend(p=>({...p,[art.sku]:v}))}/>
                   </Ti>
-
+ 
                   {/* STOCK CIERRE S — calculado */}
                   <Tv right style={sep}>
                     <span style={{color:stkCierreS<0?"#b91c1c":C.text,fontWeight:stkCierreS<0?600:400,fontSize:12}}>
@@ -2079,14 +2126,14 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                   </Tv>
                   <Tv right><DiasPill dias={diasS} estado={estadoS}/></Tv>
                   <Tv><Badge estado={estadoS}/></Tv>
-
+ 
                   {/* S+1 */}
                   {mostrarS2&&<>
                     {/* Fcst S+1 — solo lectura */}
                     <Tv right dim style={sep}>
                       <Val v={fcstS2v} hint={arrastre>0?`+${fmt(arrastre)} arr.`:null}/>
                     </Tv>
-
+ 
                     {/* Prod S+1 — editable, por defecto = óptima calculada */}
                     <Ti right>
                       <Inp value={Math.round(prodS2val)} width={75}
@@ -2102,7 +2149,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                     <Tv right>
                       <span style={{fontSize:10,color:C.muted}}>{fmt(prodOptS2)}</span>
                     </Tv>
-
+ 
                     {/* Stock cierre S+1 */}
                     <Tv right style={sep}>
                       <span style={{color:stkCierreS2<0?"#b91c1c":C.text,fontWeight:stkCierreS2<0?600:400,fontSize:12}}>
@@ -2112,7 +2159,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                     </Tv>
                     <Tv right><DiasPill dias={diasS2} estado={estadoS2}/></Tv>
                     <Tv><Badge estado={estadoS2}/></Tv>
-
+ 
                     {/* Fcst S+2 — solo lectura, al final */}
                     <Tv right dim style={sep}>
                       <Val v={fcstS3v}/>
@@ -2127,15 +2174,15 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
     </div>
   );
 }
-
+ 
 // ─── MÓDULO STOCK ────────────────────────────────────────────────────────────
 function PanelStock({ maestro, stockActual, setStockActual }) {
   const [ultimaCarga, setUltimaCarga] = useState(null);
   const [verSector, setVerSector]     = useState(false);
   const skuSet = new Set(maestro.map(a=>a.sku));
-
+ 
   function cargarStock(rows) {
-    let ok=0, noMatch=0;
+    let ok=0, noMatch=0; const skusNoMatch=[];
     const s={};
     rows.forEach(r=>{
       if (r.length<2) return;
@@ -2144,17 +2191,17 @@ function PanelStock({ maestro, stockActual, setStockActual }) {
       const kg = parseKg(r[1]);
       if (isNaN(kg)) return;
       s[sku] = kg;
-      if (skuSet.has(sku)) ok++; else noMatch++;
+      if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
     });
     setStockActual(p=>({...p,...s}));
     setUltimaCarga(new Date().toLocaleString("es-UY"));
     return {ok, noMatch, err:0};
   }
-
+ 
   const plantillaContenido = "SKU;Stock_kg\n" + maestro.map(a=>`${a.sku};0`).join("\n");
-
+ 
   const fmt = n => Math.round(n).toLocaleString("es-UY");
-
+ 
   // Totales por sector
   const sectores = [...new Set(maestro.map(a=>a.sector))];
   const totStock  = maestro.reduce((a,r)=>a+(stockActual[r.sku]||0),0);
@@ -2163,14 +2210,14 @@ function PanelStock({ maestro, stockActual, setStockActual }) {
     const kg = arts.reduce((a,r)=>a+(stockActual[r.sku]||0),0);
     return { sec, kg, pct: totStock>0?Math.round(kg/totStock*100):0 };
   }).sort((a,b)=>b.kg-a.kg);
-
+ 
   return (
     <div>
       <CargaCSV titulo="Stock actual — SAP"
         descripcion="CSV con 2 columnas: SKU · kg en stock. Mismo formato de exportación SAP. Suma CD01 + CD05 antes de importar."
         color="#0f766e" onCargar={cargarStock} ultimaCarga={ultimaCarga}
         plantillaNombre="stock.csv" plantillaContenido={plantillaContenido}/>
-
+ 
       {/* Totales */}
       <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:16}}>
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,
@@ -2201,7 +2248,7 @@ function PanelStock({ maestro, stockActual, setStockActual }) {
           <div style={{fontSize:13,fontWeight:600,color:C.ok.color}}>{ultimaCarga}</div>
         </div>}
       </div>
-
+ 
       {/* Desglose por sector */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
         <div style={{fontSize:12,fontWeight:600,color:C.text}}>Desglose por sector</div>
@@ -2211,7 +2258,7 @@ function PanelStock({ maestro, stockActual, setStockActual }) {
           {verSector?"Ocultar":"Ver desglose"}
         </button>
       </div>
-
+ 
       {verSector&&(
         <div style={{overflowX:"auto",borderRadius:8,border:`1px solid ${C.border}`,marginBottom:16}}>
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
@@ -2244,7 +2291,7 @@ function PanelStock({ maestro, stockActual, setStockActual }) {
           </table>
         </div>
       )}
-
+ 
       {/* Tabla detalle */}
       <div style={{fontSize:11,color:C.muted,marginBottom:8}}>Detalle por artículo — editable celda a celda</div>
       <div style={{overflowX:"auto",borderRadius:8,border:`1px solid ${C.border}`,maxHeight:480,overflowY:"auto"}}>
@@ -2275,7 +2322,7 @@ function PanelStock({ maestro, stockActual, setStockActual }) {
     </div>
   );
 }
-
+ 
 // ─── MÓDULO PEDIDO A PLANTA ───────────────────────────────────────────────────
 function PanelSAP({ maestro, rows, politica }) {
   const GRUPOS = {
@@ -2283,7 +2330,7 @@ function PanelSAP({ maestro, rows, politica }) {
     "Secadero":       a=>a.sector==="SECOS",
     "Packs":          a=>a.desc.toLowerCase().includes("pack"),
   };
-
+ 
   function exportarGrupo(grupo, items) {
     const header = "SKU;Descripción;Pasta;Fcst S+1 (kg);Stk cierre S (kg);Stk inicio S+1 (sem);Prod. óptima S+1 (kg);Batch ref.\n";
     const body = items.map(r=>{
@@ -2296,7 +2343,7 @@ function PanelSAP({ maestro, rows, politica }) {
     }).join("\n");
     descargarCSV(`pedido_${grupo.toLowerCase().replace(/ /g,"_")}_S+1.csv`, header+body);
   }
-
+ 
   function exportarTodo() {
     const header = "Grupo;SKU;Descripción;Pasta;Fcst S+1 (kg);Stk cierre S (kg);Stk inicio S+1 (sem);Prod. óptima S+1 (kg);Batch ref.\n";
     const body = Object.entries(GRUPOS).flatMap(([grupo,filtro])=>
@@ -2311,10 +2358,10 @@ function PanelSAP({ maestro, rows, politica }) {
     ).join("\n");
     descargarCSV("pedido_planta_S+1.csv", header+body);
   }
-
+ 
   const totalItems = rows.filter(r=>r.prodOptS2>0).length;
   const totalKg    = rows.filter(r=>r.prodOptS2>0).reduce((a,r)=>a+r.prodOptS2,0);
-
+ 
   return (
     <div>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
@@ -2331,7 +2378,7 @@ function PanelSAP({ maestro, rows, politica }) {
           ↓ Exportar todo (CSV)
         </button>
       </div>
-
+ 
       {Object.entries(GRUPOS).map(([grupo,filtro])=>{
         const items = rows.filter(r=>filtro(r.art)&&r.prodOptS2>0);
         if (items.length===0) return null;
@@ -2411,7 +2458,7 @@ function PanelSAP({ maestro, rows, politica }) {
     </div>
   );
 }
-
+ 
 // ─── MÓDULO MAESTRO ───────────────────────────────────────────────────────────
 // Política de stock mutable (fuera del componente para que persista entre renders)
 const POLITICA_INI = {
@@ -2422,7 +2469,7 @@ const POLITICA_INI = {
   faltante:         { min:0,    max:0.01, ...C.faltante },
   sinForecast:      { min:null, max:null, color:"#94a3b8", bg:"#f8fafc", border:"#e2e8f0", label:"Sin forecast" },
 };
-
+ 
 function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
   const [buscar, setBuscar]   = useState("");
   const [editIdx, setEditIdx] = useState(null);
@@ -2431,27 +2478,30 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [msgCarga, setMsgCarga] = useState(null);
   const inputMaestroRef = useRef();
-
+ 
   const arts = maestro.filter(a=>
     a.desc.toLowerCase().includes(buscar.toLowerCase())||
     a.sku.toLowerCase().includes(buscar.toLowerCase())||
     (a.pasta||"").toLowerCase().includes(buscar.toLowerCase())
   );
-
+ 
   // Exportar maestro actual como CSV
   function exportarMaestro() {
-    const header = "SKU;Descripcion;Pasta;Familia;Sector;VidaUtil;ObjPct;KgBatch;KgBatchMin;LeadTime;PermiteArrastre\n";
+    const header = "SKU;Descripcion;Pasta;Familia;Subfamilia;Sector;VidaUtil;TME;ObjPct;KgBatch;KgBatchMin;LeadTime;PesoUnitario;UnBatera;PermiteArrastre;Reventa;Vacio\n";
     const body = maestro.map(a=>
-      [a.sku, a.desc, a.pasta||"", a.familia||"", a.sector,
-       a.vidaUtil,
+      [a.sku, a.desc, a.pasta||"", a.familia||"", a.subfamilia||"", a.sector,
+       a.vidaUtil, a.tme||"",
        a.pctVUObj ? Math.round(a.pctVUObj*100) : "",
        a.kgBatch, a.kgBatchMin, a.leadTime,
-       a.permiteArrastre===false?"No":"Si"
+       a.pesoUnitario||"", a.unBatera||"",
+       a.permiteArrastre===false?"No":"Si",
+       a.reventa?"Si":"No",
+       a.vacio?"Si":"No",
       ].join(";")
     ).join("\n");
     descargarCSV("maestro_articulos.csv", header+body);
   }
-
+ 
   // Importar CSV masivo — agrega nuevos y actualiza existentes por SKU
   function importarMaestro(file) {
     if (!file) return;
@@ -2462,24 +2512,31 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
         let agregados=0, actualizados=0, err=0;
         const copia = [...maestro];
         const idxPorSku = Object.fromEntries(copia.map((a,i)=>[a.sku,i]));
-
+ 
         rows.forEach(r=>{
           if (r.length < 5) return;
           const sku = r[0]?.trim();
           if (!sku || sku.toLowerCase()==="sku") return;
           try {
+            const pn = v => parseFloat((v||"0").toString().replace(",",".")) || 0;
             const art = {
               sku,
               desc:          r[1]?.trim()||"",
               pasta:         r[2]?.trim()||"",
               familia:       r[3]?.trim()||"",
-              sector:        r[4]?.trim()||"",
-              vidaUtil:      +r[5]||60,
-              pctVUObj:      r[6]?.trim() ? Math.max(1,Math.min(100,+r[6].replace(",",".")))/100 : null,
-              kgBatch:       +r[7]?.replace(",",".")||500,
-              kgBatchMin:    +r[8]?.replace(",",".")||500,
-              leadTime:      +r[9]||3,
-              permiteArrastre: (r[10]?.trim().toLowerCase()||"si")!=="no",
+              subfamilia:    r[4]?.trim()||"",
+              sector:        r[5]?.trim()||"",
+              vidaUtil:      pn(r[6]) || 60,
+              tme:           pn(r[7]) || 0,
+              pctVUObj:      r[8]?.trim() ? Math.max(1,Math.min(100,pn(r[8])))/100 : null,
+              kgBatch:       pn(r[9])  || 500,
+              kgBatchMin:    pn(r[10]) || 500,
+              leadTime:      pn(r[11]) || 3,
+              pesoUnitario:  pn(r[12]) || 0,
+              unBatera:      pn(r[13]) || 0,
+              permiteArrastre: (r[14]?.trim().toLowerCase()||"si")!=="no",
+              reventa:       (r[15]?.trim().toLowerCase()||"no")==="si",
+              vacio:         (r[16]?.trim().toLowerCase()||"no")==="si",
             };
             if (idxPorSku[sku] !== undefined) {
               copia[idxPorSku[sku]] = art;
@@ -2491,7 +2548,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
             }
           } catch { err++; }
         });
-
+ 
         setMaestro(copia);
         setMsgCarga(`✓ ${agregados} agregados · ${actualizados} actualizados${err>0?` · ${err} errores`:""} — ${new Date().toLocaleString("es-UY")}`);
         setTimeout(()=>setMsgCarga(null), 5000);
@@ -2502,9 +2559,9 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
     reader.readAsText(file, "UTF-8");
     inputMaestroRef.current.value="";
   }
-
+ 
   function editar(idx) { setEditIdx(idx); setForm({...maestro[idx]}); }
-
+ 
   function guardar() {
     const art={...form,vidaUtil:+form.vidaUtil,kgBatch:+form.kgBatch,
       kgBatchMin:+form.kgBatchMin,leadTime:+form.leadTime};
@@ -2512,20 +2569,20 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
     if(editIdx!==null) copia[editIdx]=art; else copia.push(art);
     setMaestro(copia); setForm(null); setEditIdx(null);
   }
-
+ 
   function eliminarSeleccionados() {
     if (seleccionados.size===0) return;
     if (!window.confirm(`¿Eliminar ${seleccionados.size} artículo(s)?`)) return;
     setMaestro(maestro.filter((_,i)=>!seleccionados.has(i)));
     setSeleccionados(new Set());
   }
-
+ 
   function toggleSel(i) {
     const s = new Set(seleccionados);
     s.has(i) ? s.delete(i) : s.add(i);
     setSeleccionados(s);
   }
-
+ 
   const sectorColor = {
     CHORIZOS:  { bg:"#fff7ed", color:"#c2410c" },
     FRANKFURT: { bg:"#eff6ff", color:"#1d4ed8" },
@@ -2533,14 +2590,14 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
     "JAMÓN":   { bg:"#f0fdf4", color:"#15803d" },
     SECOS:     { bg:"#f8fafc", color:"#475569" },
   };
-
+ 
   // Actualizar el límite entre dos franjas: hasta de una = desde de la siguiente
   // filasOrden va de mayor a menor riesgo: sobrestockRiesgo > sobrestockAlerta > ok > substockAlerta > faltante
   function setLimite(key, valor) {
     const pct = Math.max(0, Math.min(100, +valor)) / 100;
     const idx = filasOrden.indexOf(key);
     const keySiguiente = filasOrden[idx + 1]; // la franja inferior, cuyo "max" es este mismo límite
-
+ 
     setPolitica(prev => {
       const next = { ...prev, [key]: { ...prev[key], min: pct } };
       if (keySiguiente && next[keySiguiente]) {
@@ -2549,9 +2606,9 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
       return next;
     });
   }
-
+ 
   const filasOrden = ["sobrestockRiesgo","sobrestockAlerta","ok","substockAlerta","faltante"];
-
+ 
   return (
     <div>
       {/* ── SELECTOR DE ROL — arriba de todo ── */}
@@ -2576,7 +2633,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
           ))}
         </div>
       </div>
-
+ 
       {/* ── ALERTAS DE STOCK ── */}
       <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,
         padding:"16px 20px",marginBottom:20}}>
@@ -2637,7 +2694,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
           Stock objetivo = 20% de la vida útil · Los umbrales definen el semáforo de alertas
         </div>
       </div>
-
+ 
       {/* ── BARRA DE CONTROLES ── */}
       <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
         <input placeholder="Buscar SKU, descripción o pasta..." value={buscar}
@@ -2681,7 +2738,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
           {msgCarga}
         </div>
       )}
-
+ 
       {/* ── FORMULARIO ── */}
       {form&&(
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,
@@ -2692,9 +2749,14 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:12}}>
             {[["SKU","sku","text",false],["Descripción","desc","text",false],
               ["Pasta","pasta","text",true],["Familia","familia","text",false],
-              ["Sector","sector","text",false],["Vida útil (días)","vidaUtil","number",true],
+              ["Subfamilia","subfamilia","text",false],
+              ["Sector","sector","text",false],
+              ["Vida útil (días)","vidaUtil","number",true],
+              ["TME (días)","tme","number",true],
               ["Kg/Batch","kgBatch","number",true],["Kg/Batch mín.","kgBatchMin","number",true],
               ["Lead time (días)","leadTime","number",true],
+              ["Peso unitario (kg)","pesoUnitario","number",false],
+              ["Un/batera","unBatera","number",false],
             ].map(([label,key,type,esAdmin])=>(
               <label key={key} style={{display:"flex",flexDirection:"column",gap:4}}>
                 <span style={{fontSize:10,color:C.muted}}>
@@ -2740,6 +2802,28 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                 <option value="no">No</option>
               </select>
             </label>
+            <label style={{display:"flex",flexDirection:"column",gap:4}}>
+              <span style={{fontSize:10,color:C.muted}}>Reventa</span>
+              <select value={form.reventa?"si":"no"}
+                onChange={e=>setForm({...form,reventa:e.target.value==="si"})}
+                style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,
+                  padding:"6px 10px",borderRadius:5,fontSize:12,outline:"none"}}>
+                <option value="no">No (producción propia)</option>
+                <option value="si">Sí (reventa)</option>
+              </select>
+            </label>
+            <label style={{display:"flex",flexDirection:"column",gap:4}}>
+              <span style={{fontSize:10,color:C.muted}}>Vacío 🔐</span>
+              <select value={form.vacio?"si":"no"}
+                disabled={rol!=="admin"}
+                onChange={e=>rol==="admin"&&setForm({...form,vacio:e.target.value==="si"})}
+                style={{background:rol!=="admin"?"#f9fafb":C.surface,
+                  border:`1px solid ${C.border}`,color:C.text,padding:"6px 10px",
+                  borderRadius:5,fontSize:12,outline:"none"}}>
+                <option value="no">No</option>
+                <option value="si">Sí (envasado al vacío)</option>
+              </select>
+            </label>
           </div>
           <div style={{display:"flex",gap:10,marginTop:16}}>
             {rol==="admin"&&<button onClick={guardar}
@@ -2751,7 +2835,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
           </div>
         </div>
       )}
-
+ 
       {/* ── TABLA DE ARTÍCULOS ── */}
       <div style={{fontSize:11,color:C.muted,marginBottom:6}}>
         {arts.length} artículos
@@ -2762,17 +2846,18 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead><tr>
             {rol==="admin"&&<Th/>}
-            <Th>SKU</Th><Th>Descripción</Th><Th>Pasta</Th><Th>Sector</Th>
-            <Th right>VU (d) 🔐</Th><Th right>Obj. % 🔐</Th><Th right>Obj. días</Th>
+            <Th>SKU</Th><Th>Descripción</Th><Th>Pasta</Th><Th>Sector</Th><Th>Subfamilia</Th>
+            <Th right>VU (d) 🔐</Th><Th right>TME 🔐</Th><Th right>Obj. % 🔐</Th><Th right>Obj. días</Th>
             <Th right>Kg/Batch 🔐</Th><Th right>Batch mín 🔐</Th>
-            <Th right>Lead 🔐</Th><Th>Arrastre 🔐</Th><Th/>
+            <Th right>Lead 🔐</Th><Th right>Peso u.</Th><Th right>Un/bat.</Th>
+            <Th>Arrastre 🔐</Th><Th>Reventa</Th><Th>Vacío 🔐</Th><Th/>
           </tr></thead>
           <tbody>
             {arts.map((art,i)=>{
               const realIdx = maestro.indexOf(art);
               const pctObj  = (art.pctVUObj != null && art.pctVUObj > 0) ? art.pctVUObj : 0.20;
               const diasObj = (art.vidaUtil * pctObj).toFixed(1);
-              const sc = sectorColor[art.sector]||{bg:"#f8fafc",color:"#64748b"};
+              const sc  = sectorColor[art.sector]||{bg:"#f8fafc",color:"#64748b"};
               const sel = seleccionados.has(realIdx);
               return (
                 <tr key={art.sku+i}
@@ -2796,7 +2881,17 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                       {art.sector}
                     </span>
                   </Tv>
+                  <Tv dim><span style={{fontSize:10}}>{art.subfamilia||"—"}</span></Tv>
                   <Tv right dim>{art.vidaUtil}</Tv>
+                  {/* TME con alerta si diasObj > TME */}
+                  <Tv right>
+                    {art.tme ? (
+                      <span style={{color: diasObj > art.tme ? "#b91c1c" : C.textDim, fontWeight: diasObj > art.tme ? 700 : 400}}>
+                        {art.tme}d
+                        {diasObj > art.tme && <span title="Stock objetivo supera el TME"> ⚠</span>}
+                      </span>
+                    ) : <span style={{color:C.muted}}>—</span>}
+                  </Tv>
                   <Tv right>
                     {rol==="admin" ? (
                       <div style={{display:"flex",alignItems:"center",gap:3,justifyContent:"flex-end"}}>
@@ -2819,10 +2914,22 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                   <Tv right dim>{art.kgBatch.toLocaleString("es-UY")}</Tv>
                   <Tv right dim>{art.kgBatchMin.toLocaleString("es-UY")}</Tv>
                   <Tv right dim>{art.leadTime}</Tv>
+                  <Tv right dim>{art.pesoUnitario||"—"}</Tv>
+                  <Tv right dim>{art.unBatera||"—"}</Tv>
                   <Tv>
                     {art.permiteArrastre===false
                       ? <span style={{color:C.muted,fontSize:10}}>No</span>
                       : <span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>}
+                  </Tv>
+                  <Tv>
+                    {art.reventa
+                      ? <span style={{background:"#eff6ff",color:"#1d4ed8",padding:"1px 6px",borderRadius:3,fontSize:9,fontWeight:600}}>Reventa</span>
+                      : <span style={{color:C.muted,fontSize:10}}>Propio</span>}
+                  </Tv>
+                  <Tv>
+                    {art.vacio
+                      ? <span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>
+                      : <span style={{color:C.muted,fontSize:10}}>No</span>}
                   </Tv>
                   <Tv>
                     {rol==="admin"&&(
@@ -2842,11 +2949,11 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
     </div>
   );
 }
-
+ 
 // ─── MÓDULO INSTRUCTIVO ───────────────────────────────────────────────────────
 function PanelInstructivo() {
   const [seccion, setSeccion] = useState("flujo");
-
+ 
   const secciones = [
     { id:"flujo",    label:"Flujo del proceso" },
     { id:"calculos", label:"Reglas de cálculo" },
@@ -2854,7 +2961,7 @@ function PanelInstructivo() {
     { id:"cargas",   label:"Carga de datos" },
     { id:"maestro",  label:"Maestro de artículos" },
   ];
-
+ 
   const H2 = ({children}) => (
     <div style={{fontSize:14,fontWeight:700,color:C.text,margin:"20px 0 8px",
       paddingBottom:6,borderBottom:`1px solid ${C.hairline}`}}>
@@ -2899,7 +3006,7 @@ function PanelInstructivo() {
       </table>
     </div>
   );
-
+ 
   return (
     <div style={{display:"flex",gap:24,alignItems:"flex-start"}}>
       {/* Sidebar */}
@@ -2917,15 +3024,15 @@ function PanelInstructivo() {
           </button>
         ))}
       </div>
-
+ 
       {/* Contenido */}
       <div style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,
         borderRadius:10,padding:"24px 28px",maxWidth:760}}>
-
+ 
         {seccion==="flujo"&&<>
           <H2>Flujo del proceso de planificación</H2>
           <P>El proceso tiene una cadencia semanal con dos reuniones de alineación fijas y un cierre de pedidos el lunes.</P>
-
+ 
           <H3>Jueves 13hs — Reunión Planificación + Planta</H3>
           <Tabla
             headers={["Quién","Qué"]}
@@ -2935,7 +3042,7 @@ function PanelInstructivo() {
               ["Ambos","Revisan el borrador del plan S+1 con toda la información disponible y anticipan posibles ajustes"],
             ]}
           />
-
+ 
           <H3>Viernes 8am — Cálculo y envío del pedido</H3>
           <Tabla
             headers={["Fuente","Dato","Cómo llega"]}
@@ -2947,7 +3054,7 @@ function PanelInstructivo() {
               ["Planificación","Genera el Pedido a Planta con las cantidades óptimas S+1","Exportado como CSV desde pestaña Pedido a Planta"],
             ]}
           />
-
+ 
           <H3>Viernes 13hs — Reunión Planificación + Planta</H3>
           <Tabla
             headers={["Quién","Qué"]}
@@ -2958,7 +3065,7 @@ function PanelInstructivo() {
               ["Ambos","Las solicitudes de traslado en SAP quedan abiertas hasta el lunes para ajustes de último momento"],
             ]}
           />
-
+ 
           <H3>Lunes — Cierre de pedidos</H3>
           <Tabla
             headers={["Hora","Quién","Qué"]}
@@ -2967,7 +3074,7 @@ function PanelInstructivo() {
               ["Fin del día","Planificación","Cierre definitivo de las solicitudes de traslado en SAP"],
             ]}
           />
-
+ 
           <H3>Diario — Ajuste operativo</H3>
           <Tabla
             headers={["Momento","Quién","Qué"]}
@@ -2977,7 +3084,7 @@ function PanelInstructivo() {
               ["Durante el día","Planificación","Monitoreo de stock y venta. Actualiza producción acumulada."],
             ]}
           />
-
+ 
           <H3>Cadencias de actualización de datos</H3>
           <Tabla
             headers={["Variable","Fuente","Cuándo","Método"]}
@@ -2992,11 +3099,11 @@ function PanelInstructivo() {
             ]}
           />
         </>}
-
+ 
         {seccion==="calculos"&&<>
           <H2>Reglas de cálculo</H2>
           <P>Todas las fórmulas operan sobre kg. Los cálculos se realizan semana a semana, de izquierda a derecha en la tabla de Plan & Estado.</P>
-
+ 
           <H3>Semana S — Venta</H3>
           <Formula>
             Fcst pendiente = Fcst S − Venta facturada acum. − Pedidos pendientes{"\n"}
@@ -3004,20 +3111,20 @@ function PanelInstructivo() {
             {"  "}→ Si es positivo: falta cubrir con stock + producción{"\n\n"}
             Venta total S = Fact. acum. + Pedidos pend. + max(0, Fcst pendiente)
           </Formula>
-
+ 
           <H3>Semana S — Producción</H3>
           <Formula>
             Prod. total S = Prod. acumulada (SAP) + Prod. pendiente (plan planta){"\n\n"}
             Prod. pendiente sugerida = max(0, Venta total S + Stock objetivo − Stock actual − Prod. acum.)
           </Formula>
-
+ 
           <H3>Stock cierre S</H3>
           <Formula>
             Stock cierre S = Stock actual − Venta total S + Prod. total S{"\n"}
             {"  "}→ Puede ser negativo (déficit){"\n"}
             {"  "}→ Si Fcst pendiente es negativo (sobreventa), no se resta demanda adicional
           </Formula>
-
+ 
           <H3>Semana S+1 — Producción óptima</H3>
           <Formula>
             Stock objetivo S+1 = (Fcst S+1 / 7) × Días objetivo{"\n"}
@@ -3025,19 +3132,19 @@ function PanelInstructivo() {
             Prod. óptima S+1 = max(0, Fcst S+1 + Stock objetivo S+1 − max(0, Stock cierre S))
           </Formula>
           <P>La producción óptima es la <strong>referencia calculada</strong> por la herramienta. El planner puede ajustarla según restricciones de batch, capacidad y lead time.</P>
-
+ 
           <H3>Stock cierre S+1</H3>
           <Formula>
             Stock cierre S+1 = max(0, Stock cierre S) − Fcst S+1 + Prod. S+1 (ajustada por planner)
           </Formula>
-
+ 
           <H3>Días de stock</H3>
           <Formula>
             Días de stock = (kg en stock / Fcst semanal) × 7{"\n"}
             {"  "}→ Si Fcst = 0: se muestra como "Sin forecast" (no es faltante){"\n"}
             {"  "}→ Si stock > 0 y Fcst = 0: se muestra "∞"
           </Formula>
-
+ 
           <H3>Arrastre S → S+1 (opcional)</H3>
           <Formula>
             Arrastre = max(0, Fcst pendiente − max(0, Stock cierre S)){"\n"}
@@ -3046,11 +3153,11 @@ function PanelInstructivo() {
             Por defecto: Sí para productos con VU {">"} 12 días, No para frescos.
           </Formula>
         </>}
-
+ 
         {seccion==="politica"&&<>
           <H2>Política de stock</H2>
           <P>Los estados de stock se calculan como porcentaje de la vida útil (VU) del producto. Los umbrales son configurables por Admin en la pestaña Maestro.</P>
-
+ 
           <Tabla
             headers={["Estado","Rango % VU","Descripción","Acción sugerida"]}
             rows={[
@@ -3062,7 +3169,7 @@ function PanelInstructivo() {
               [<Tag color="#94a3b8" bg="#f8fafc">Sin forecast</Tag>,"—","No hay forecast cargado para este producto","Verificar con Comercial si el producto sigue activo."],
             ]}
           />
-
+ 
           <H3>Stock objetivo por producto</H3>
           <Formula>
             Días objetivo = Vida útil × 20%{"\n\n"}
@@ -3072,13 +3179,13 @@ function PanelInstructivo() {
           </Formula>
           <P>El 20% se origina en que ciertos clientes exigen que los productos se entreguen con al menos el 80% de la vida útil restante. Eso deja una ventana de comercialización del 20% de la VU desde la fecha de elaboración.</P>
         </>}
-
+ 
         {seccion==="cargas"&&<>
           <H2>Carga de datos</H2>
-
+ 
           <H3>Formato CSV general</H3>
           <P>Todos los archivos usan <strong>punto y coma (;)</strong> como separador. Los números usan coma decimal (formato UY/ES). La primera fila es el encabezado y se ignora automáticamente.</P>
-
+ 
           <H3>Forecast (pestaña Forecast)</H3>
           <Formula>
             SKU;S_actual;S+1;S+2{"\n"}
@@ -3087,7 +3194,7 @@ function PanelInstructivo() {
             ...
           </Formula>
           <P>Una fila por SKU. Las tres semanas en un mismo archivo. Al importar, se pisan todos los valores del forecast para los SKUs incluidos.</P>
-
+ 
           <H3>Producción (pestaña Producción)</H3>
           <Formula>
             SKU;Prod_pend_S;Prod_S+1{"\n"}
@@ -3096,14 +3203,14 @@ function PanelInstructivo() {
             ...
           </Formula>
           <P><Tag>Prod pend S</Tag> es lo que planta planifica producir en los días restantes de la semana actual. <Tag>Prod S+1</Tag> es el plan de producción para la semana siguiente, confirmado con planta.</P>
-
+ 
           <H3>Producción acumulada</H3>
           <P>Por ahora se carga manualmente celda a celda en la tabla de la pestaña Producción. En una etapa futura se conectará directamente con SAP.</P>
-
+ 
           <H3>Datos de SAP (stock, ventas, pedidos)</H3>
           <P>Por ahora se cargan manualmente en la tabla de Plan & Estado. En una etapa futura se automatizará la descarga desde SAP a una carpeta y la importación se realizará con un botón.</P>
         </>}
-
+ 
         {seccion==="maestro"&&<>
           <H2>Maestro de artículos</H2>
           <P>El maestro centraliza los parámetros de cada SKU. Hay dos niveles de acceso:</P>
@@ -3114,7 +3221,7 @@ function PanelInstructivo() {
               ["📋 Planificación","Ver todos los datos. No puede modificar parámetros marcados con 🔐"],
             ]}
           />
-
+ 
           <H3>Campos del artículo</H3>
           <Tabla
             headers={["Campo","Descripción","Impacto en cálculos","Admin"]}
@@ -3131,10 +3238,10 @@ function PanelInstructivo() {
               ["Permite arrastre","Si la demanda no atendida se suma al fcst S+1","Activa el arrastre cuando el toggle está encendido","Sí 🔐"],
             ]}
           />
-
+ 
           <H3>Agregar y eliminar artículos</H3>
           <P>En modo Admin, el botón <strong>+ Artículo</strong> abre el formulario de alta. Para eliminar, seleccioná uno o varios artículos con el checkbox y usá el botón <strong>− Artículo(s)</strong>. Se pide confirmación antes de eliminar.</P>
-
+ 
           <H3>Política de stock</H3>
           <P>Los umbrales de la política se editan directamente en la tabla de la sección "Política de stock" dentro del Maestro (solo en modo Admin). El campo "Hasta" de cada franja es editable; el "Desde" se actualiza automáticamente como el "Hasta" de la franja anterior.</P>
         </>}
@@ -3142,8 +3249,188 @@ function PanelInstructivo() {
     </div>
   );
 }
-
-
+ 
+// ─── MÓDULO CARGA DE DATOS ───────────────────────────────────────────────────
+function PanelCarga({ maestro,
+  setStockActual, setVentaAcum, setPedidosPend, setProdAcum, setProdPend,
+  setFcstActual, setFcstS2, setFcstS3,
+  logs, registrarLog }) {
+ 
+  const skuSet = new Set(maestro.map(a=>a.sku));
+  const [verDetalle, setVerDetalle] = useState(null);
+ 
+  function semaforo(log) {
+    if (!log) return { color:"#94a3b8", bg:"#f8fafc", label:"Sin datos", icono:"⚪" };
+    const horas = (new Date() - new Date(log.fecha)) / 3600000;
+    if (horas < 12)  return { color:"#15803d", bg:"#f0fdf4", label:"Hoy", icono:"🟢" };
+    if (horas < 48)  return { color:"#d97706", bg:"#fffbeb", label:"Hace 1-2 días", icono:"🟡" };
+    return { color:"#b91c1c", bg:"#fef2f2", label:"Hace 3+ días", icono:"🔴" };
+  }
+ 
+  function fmtFecha(log) {
+    if (!log) return "—";
+    const d = new Date(log.fecha);
+    return d.toLocaleDateString("es-UY") + " " + d.toLocaleTimeString("es-UY",{hour:"2-digit",minute:"2-digit"});
+  }
+ 
+  function mkCargar(setter, campo) {
+    return function(rows) {
+      let ok=0, noMatch=0; const skusNoMatch=[];
+      const data={};
+      rows.forEach(r=>{
+        if (r.length<2) return;
+        const sku=r[0]?.trim();
+        if (!sku||sku.toLowerCase()==="sku"||sku.toLowerCase()==="número de artículo") return;
+        const kg=parseKg(r[1]);
+        data[sku]=kg;
+        if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
+      });
+      setter(p=>({...p,...data}));
+      const res={ok,noMatch,err:0,skusNoMatch};
+      registrarLog(campo,res);
+      return res;
+    };
+  }
+ 
+  function cargarFcst(rows) {
+    let ok=0, noMatch=0; const skusNoMatch=[];
+    const s1={},s2={},s3={};
+    rows.forEach(r=>{
+      if (r.length<2) return;
+      const sku=r[0]?.trim();
+      if (!sku||sku.toLowerCase()==="sku") return;
+      s1[sku]=parseKg(r[1]); s2[sku]=parseKg(r[2]||"0"); s3[sku]=parseKg(r[3]||"0");
+      if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
+    });
+    setFcstActual(p=>({...p,...s1}));
+    setFcstS2(p=>({...p,...s2}));
+    setFcstS3(p=>({...p,...s3}));
+    const res={ok,noMatch,err:0,skusNoMatch};
+    registrarLog("forecast",res);
+    return res;
+  }
+ 
+  function cargarProd(rows) {
+    let ok=0, noMatch=0; const skusNoMatch=[];
+    const pend={},acum={};
+    rows.forEach(r=>{
+      if (r.length<2) return;
+      const sku=r[0]?.trim();
+      if (!sku||sku.toLowerCase()==="sku") return;
+      acum[sku]=parseKg(r[1]); pend[sku]=parseKg(r[2]||"0");
+      if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
+    });
+    setProdAcum(p=>({...p,...acum}));
+    setProdPend(p=>({...p,...pend}));
+    const res={ok,noMatch,err:0,skusNoMatch};
+    registrarLog("produccion",res);
+    return res;
+  }
+ 
+  const FUENTES = [
+    { id:"stock",       label:"Stock",             icono:"📦", color:"#0f766e",
+      desc:"SKU · kg en stock (suma CD01+CD05)",
+      plantilla:"SKU;Stock_kg\n"+maestro.map(a=>`${a.sku};0`).join("\n"),
+      onCargar: mkCargar(setStockActual,"stock") },
+    { id:"ventaAcum",   label:"Venta acumulada",   icono:"💰", color:"#0891b2",
+      desc:"SKU · kg facturados acumulados a la fecha",
+      plantilla:"SKU;Venta_acum_kg\n"+maestro.map(a=>`${a.sku};0`).join("\n"),
+      onCargar: mkCargar(setVentaAcum,"ventaAcum") },
+    { id:"pedidosPend", label:"Pedidos pendientes", icono:"📋", color:"#0369a1",
+      desc:"SKU · kg en pedidos confirmados sin facturar",
+      plantilla:"SKU;Pedidos_pend_kg\n"+maestro.map(a=>`${a.sku};0`).join("\n"),
+      onCargar: mkCargar(setPedidosPend,"pedidosPend") },
+    { id:"produccion",  label:"Producción",         icono:"🏭", color:"#7c3aed",
+      desc:"SKU · Prod acum · Prod pendiente S",
+      plantilla:"SKU;Prod_pend_S;Prod_S+1\n"+maestro.map(a=>`${a.sku};0;0`).join("\n"),
+      onCargar: cargarProd },
+    { id:"forecast",    label:"Forecast",           icono:"📊", color:"#2563eb",
+      desc:"SKU · Fcst S · Fcst S+1 · Fcst S+2",
+      plantilla:"SKU;S_actual;S+1;S+2\n"+maestro.map(a=>`${a.sku};0;0;0`).join("\n"),
+      onCargar: cargarFcst },
+  ];
+ 
+  return (
+    <div>
+      {/* ── ESTADO DE CARGAS ── */}
+      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,
+        padding:"16px 20px",marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:14}}>Estado de cargas</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {FUENTES.map(f=>{
+            const log = logs[f.id];
+            const sem = semaforo(log);
+            const tieneErrores = log && log.noMatch > 0;
+            return (
+              <div key={f.id} style={{display:"flex",alignItems:"center",gap:12,
+                padding:"10px 14px",background:sem.bg,borderRadius:7,
+                border:`1px solid ${sem.color}30`}}>
+                <span style={{fontSize:18}}>{f.icono}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:12,fontWeight:600,color:C.text}}>{f.label}</div>
+                  <div style={{fontSize:10,color:C.muted,marginTop:1}}>
+                    {log ? `${log.ok} SKUs cargados · ${fmtFecha(log)}` : "Sin carga registrada"}
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  {tieneErrores&&(
+                    <button onClick={()=>setVerDetalle(verDetalle===f.id?null:f.id)}
+                      style={{background:"#fef3c7",border:"1px solid #fde68a",color:"#92400e",
+                        padding:"3px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:600}}>
+                      ⚠ {log.noMatch} no encontrados {verDetalle===f.id?"▲":"▼"}
+                    </button>
+                  )}
+                  {log&&!tieneErrores&&(
+                    <span style={{fontSize:10,color:sem.color,fontWeight:600}}>✓ Sin errores</span>
+                  )}
+                  <span style={{fontSize:11,color:sem.color,fontWeight:700}}>{sem.icono} {sem.label}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+ 
+        {/* Panel detalle errores */}
+        {verDetalle&&logs[verDetalle]&&logs[verDetalle].skusNoMatch.length>0&&(
+          <div style={{marginTop:12,padding:"12px 16px",background:"#fffbeb",
+            border:"1px solid #fde68a",borderRadius:7}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+              <div style={{fontSize:11,fontWeight:700,color:"#92400e"}}>
+                SKUs no encontrados — {FUENTES.find(f=>f.id===verDetalle)?.label}
+              </div>
+              <button onClick={()=>setVerDetalle(null)}
+                style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+              {logs[verDetalle].skusNoMatch.map(sku=>(
+                <span key={sku} style={{background:"#fef3c7",color:"#92400e",
+                  border:"1px solid #fde68a",padding:"2px 8px",borderRadius:4,
+                  fontSize:10,fontFamily:"monospace"}}>
+                  {sku}
+                </span>
+              ))}
+            </div>
+            <div style={{fontSize:10,color:"#b45309",lineHeight:1.5}}>
+              Estos SKUs tienen datos en el archivo pero no están en el Maestro → sus valores no se cargaron.
+              Agregálos en la pestaña <strong>Maestro → ↑ Importar CSV</strong> y volvé a cargar este archivo.
+            </div>
+          </div>
+        )}
+      </div>
+ 
+      {/* ── BLOQUES DE CARGA ── */}
+      <div style={{display:"grid",gap:0}}>
+        {FUENTES.map(f=>(
+          <CargaCSV key={f.id} titulo={f.label} descripcion={f.desc}
+            color={f.color} onCargar={f.onCargar}
+            ultimaCarga={logs[f.id]?fmtFecha(logs[f.id]):null}
+            plantillaNombre={`${f.id}.csv`} plantillaContenido={f.plantilla}/>
+        ))}
+      </div>
+    </div>
+  );
+}
+ 
 export default function App() {
   const [tab, setTab]         = useState("plan");
   const [maestro, setMaestro] = useState(MAESTRO_UNICO);
@@ -3157,10 +3444,22 @@ export default function App() {
   const [prodAcum, setProdAcum]         = useState(PROD_ACUM_INI);
   const [prodPend, setProdPend]         = useState(PROD_PEND_INI);
   const [prodS2, setProdS2]             = useState(PROD_S2_INI);
-
+ 
+  // ── LOGS DE CARGA ──
+  const LOG_INI = { stock:null, ventaAcum:null, pedidosPend:null, produccion:null, forecast:null };
+  const [logs, setLogs] = useState(LOG_INI);
+ 
+  function registrarLog(fuente, {ok, noMatch, err, skusNoMatch=[]}) {
+    setLogs(prev=>({...prev, [fuente]:{
+      fecha: new Date(),
+      ok, noMatch, err,
+      skusNoMatch,
+    }}));
+  }
+ 
   // ── GUARDAR / CARGAR SESIÓN ──
   const sesionInputRef = useRef();
-
+ 
   function exportarSesion() {
     const sesion = {
       version: 1,
@@ -3172,7 +3471,7 @@ export default function App() {
     };
     descargarCSV("sesion_planificacion.json", JSON.stringify(sesion, null, 2));
   }
-
+ 
   function importarSesion(file) {
     if (!file) return;
     const reader = new FileReader();
@@ -3198,25 +3497,21 @@ export default function App() {
     reader.readAsText(file, "UTF-8");
     sesionInputRef.current.value = "";
   }
-
+ 
   const ctx0 = { fcstS:fcstActual, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPend,
                  prodAcum, prodPend, prodS2, conArrastre:false };
-  const rows = useMemo(()=>
-    maestro.map(art=>({ art, ...calcRow(art, ctx0) }))
-  ,[maestro,fcstActual,fcstS2,fcstS3,stockActual,ventaAcum,pedidosPend,prodAcum,prodPend,prodS2]);
-
+  const rows = maestro.map(art=>({ art, ...calcRow(art, ctx0) }));
+ 
   const alertasTotal = rows.filter(r=>["faltante","substockAlerta"].includes(r.estadoActual)).length;
-
+ 
   const tabs = [
-    { id:"plan", label:"Plan & Estado" },
-    { id:"stock", label:"Stock" },
-    { id:"fcst", label:"Venta" },
-    { id:"prod", label:"Producción" },
-    { id:"sap",  label:"Pedido a Planta" },
-    { id:"mto",  label:"Maestro" },
-    { id:"info", label:"Instructivo" },
+    { id:"plan",  label:"Plan & Estado" },
+    { id:"carga", label:"📥 Carga de datos" },
+    { id:"sap",   label:"Pedido a Planta" },
+    { id:"mto",   label:"Maestro" },
+    { id:"info",  label:"Instructivo" },
   ];
-
+ 
   return (
     <div style={{fontFamily:"'DM Sans','IBM Plex Sans',system-ui,sans-serif",
       background:C.bg,minHeight:"100vh",color:C.text}}>
@@ -3273,19 +3568,12 @@ export default function App() {
           prodAcum={prodAcum} setProdAcum={setProdAcum}
           prodPend={prodPend} setProdPend={setProdPend}
           prodS2={prodS2} setProdS2={setProdS2}/>}
-        {tab==="stock"&&<PanelStock maestro={maestro}
-          stockActual={stockActual} setStockActual={setStockActual}/>}
-        {tab==="fcst"&&<PanelFCST maestro={maestro}
-          fcstActual={fcstActual} setFcstActual={setFcstActual}
-          fcstS2={fcstS2} setFcstS2={setFcstS2}
-          fcstS3={fcstS3} setFcstS3={setFcstS3}
-          ventaAcum={ventaAcum} setVentaAcum={setVentaAcum}
-          pedidosPend={pedidosPend} setPedidosPend={setPedidosPend}/>}
-        {tab==="prod"&&<PanelProd maestro={maestro}
-          prodAcum={prodAcum} setProdAcum={setProdAcum}
-          prodPend={prodPend} setProdPend={setProdPend}
-          prodS2={prodS2} setProdS2={setProdS2}
-          fcstActual={fcstActual}/>}
+        {tab==="carga"&&<PanelCarga maestro={maestro}
+          setStockActual={setStockActual}
+          setVentaAcum={setVentaAcum} setPedidosPend={setPedidosPend}
+          setProdAcum={setProdAcum} setProdPend={setProdPend}
+          setFcstActual={setFcstActual} setFcstS2={setFcstS2} setFcstS3={setFcstS3}
+          logs={logs} registrarLog={registrarLog}/>}
         {tab==="sap"&&<PanelSAP maestro={maestro} rows={rows} politica={politica}/>}
         {tab==="mto"&&<PanelMaestro maestro={maestro} setMaestro={setMaestro}
           politica={politica} setPolitica={setPolitica}/>}
@@ -3294,3 +3582,4 @@ export default function App() {
     </div>
   );
 }
+ 
