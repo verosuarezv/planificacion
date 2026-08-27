@@ -6,9 +6,9 @@ const C = {
   accent:"#4f46e5", accentDim:"#eef2ff",
   // estados de stock — solo para badges y colores de alerta
   ok:          { color:"#15803d", bg:"#f0fdf4", border:"#bbf7d0", label:"OK",         icon:"●" },
-  sobRiesgo:   { color:"#92400e", bg:"#fffbeb", border:"#fcd34d", label:"Riesgo Vto", icon:"●" },
-  sobAlerta:   { color:"#b45309", bg:"#fffbeb", border:"#fde68a", label:"Sobrestock", icon:"●" },
-  subAlerta:   { color:"#c2410c", bg:"#fff7ed", border:"#fed7aa", label:"Substock",   icon:"●" },
+  sobRiesgo:   { color:"#6d28d9", bg:"#f5f3ff", border:"#ddd6fe", label:"Riesgo Vto", icon:"●" },
+  sobAlerta:   { color:"#1d4ed8", bg:"#eff6ff", border:"#bfdbfe", label:"Sobrestock", icon:"●" },
+  subAlerta:   { color:"#ca8a04", bg:"#fefce8", border:"#fde047", label:"Substock",   icon:"●" },
   faltante:    { color:"#b91c1c", bg:"#fef2f2", border:"#fecaca", label:"Faltante",   icon:"●" },
   // texto
   text:"#0f172a", textDim:"#64748b", muted:"#94a3b8",
@@ -71,7 +71,7 @@ const VENTA_ACUM_INI = {};
 const PEDIDOS_PEND_INI = {};
 
 // ─── UI ATOMS ────────────────────────────────────────────────────────────────
-const COL_W = 72; // ancho uniforme de columnas de datos en px
+const COL_W = 58; // ancho uniforme de columnas de datos en px
 
 const Th = ({children,right,center,style:s})=>(
   <th style={{padding:"5px 6px",textAlign:"center",
@@ -1105,7 +1105,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                 fontSize:10,color:orden.col==="desc"?C.accent:C.muted,textTransform:"uppercase",
                 letterSpacing:"0.06em",borderBottom:`2px solid ${C.hairline}`,
                 position:"sticky",top:0,left:64,zIndex:5,textAlign:"left",
-                width:180,minWidth:180,cursor:"pointer",userSelect:"none",
+                width:260,minWidth:260,cursor:"pointer",userSelect:"none",
                 borderRight:`2px solid ${C.border}`}}>
                 Descripción{sortIcon("desc")}
               </th>
@@ -1168,9 +1168,9 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                   {/* DESCRIPCIÓN — sticky después del SKU */}
                   <td style={{padding:"6px 10px",position:"sticky",left:64,zIndex:1,
                     background:"inherit",borderRight:`2px solid ${C.border}`,
-                    width:180,minWidth:180}}>
+                    width:260,minWidth:260}}>
                     <div style={{fontWeight:500,color:C.text,fontSize:12,
-                      width:170,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      width:250,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                       {art.desc}
                     </div>
                     <div style={{fontSize:9,color:C.muted,marginTop:1}}>
@@ -1187,15 +1187,35 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
 
                   {/* VENTA S — todo solo lectura */}
                   <Tv right dim style={sep}><Val v={fcst}/></Tv>
-                  <Tv right dim><Val v={factAcum}
-                    hint={fcst>0?`${Math.round(factAcum/fcst*100)}%`:""}/></Tv>
+                  <Tv right dim>
+                    {(()=>{
+                      const pctAv = fcst>0 ? Math.round(factAcum/fcst*100) : null;
+                      const colAv = pctAv==null ? C.muted
+                        : pctAv>120 ? "#1d4ed8"
+                        : pctAv>=80 ? "#15803d"
+                        : pctAv>=60 ? "#d97706"
+                        : pctAv>=40 ? "#ea580c"
+                        : "#b91c1c";
+                      return <>
+                        <div style={{textAlign:"center",fontSize:12,color:C.text}}>{fmt(factAcum)}</div>
+                        {pctAv!=null&&<div style={{fontSize:9,color:colAv,fontWeight:600,textAlign:"center"}}>{pctAv}%</div>}
+                      </>;
+                    })()}
+                  </Tv>
                   <Tv right dim><Val v={pedidos}/></Tv>
                   <Tv right>
-                    <span style={{color:fcstPend<0?"#b45309":fcstPend===0?C.muted:C.text,
-                      fontSize:12,fontWeight:fcstPend!==0?500:400}}>
-                      {fmt(Math.max(0,fcstPend))}
-                    </span>
-                    {fcstPend<0&&<div style={{fontSize:9,color:"#b45309"}}>sobreventa</div>}
+                    {(()=>{
+                      const pctAv = fcst>0 ? Math.round(factAcum/fcst*100) : null;
+                      const esSubventa = pctAv!=null && pctAv<40 && fcstPend>=0;
+                      return <>
+                        <span style={{color:fcstPend<0&&pctAv>120?"#1d4ed8":esSubventa?"#b91c1c":fcstPend===0?C.muted:C.text,
+                          fontSize:12,fontWeight:fcstPend!==0?500:400}}>
+                          {fmt(Math.max(0,fcstPend))}
+                        </span>
+                        {fcstPend<0&&pctAv>120&&<div style={{fontSize:9,color:"#1d4ed8",fontWeight:600}}>sobreventa</div>}
+                        {esSubventa&&<div style={{fontSize:9,color:"#b91c1c",fontWeight:600}}>subventa</div>}
+                      </>;
+                    })()}
                   </Tv>
 
                   {/* PRODUCCIÓN S — acum solo lectura, pend editable */}
