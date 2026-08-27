@@ -1068,6 +1068,21 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
             Venta promedio S/S+1/S+2
           </label>
         )}
+        {mostrarS2&&(
+          <button onClick={()=>{
+            if(window.confirm("¿Resetear la producción S+1 de todos los artículos al valor automático calculado?")) {
+              setProdS2(p => {
+                const nuevo = {...p};
+                maestro.forEach(a => { delete nuevo[a.sku]; });
+                return nuevo;
+              });
+            }
+          }}
+            style={{background:"#f0fdf4",border:`1px solid #bbf7d0`,color:"#15803d",
+              padding:"5px 12px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>
+            ↺ Reset todos a automático
+          </button>
+        )}
         <div style={{fontSize:11,color:C.muted,marginLeft:"auto"}}>{rowsFilt.length} artículos</div>
       </div>
 
