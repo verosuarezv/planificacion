@@ -436,8 +436,16 @@ function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga,
       {verDetalle&&noEncontrados.length>0&&(
         <div style={{marginTop:12,padding:"10px 14px",background:"#fffbeb",
           border:"1px solid #fde68a",borderRadius:7}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#92400e",marginBottom:6}}>
-            SKUs no encontrados en el maestro — no se cargaron
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#92400e"}}>
+              SKUs no encontrados en el maestro — no se cargaron
+            </div>
+            <button onClick={()=>descargarCSV("skus_no_encontrados.csv",
+              "SKU\n"+noEncontrados.join("\n"))}
+              style={{background:"#fef3c7",border:"1px solid #fde68a",color:"#92400e",
+                padding:"3px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:600}}>
+              ↓ Descargar lista
+            </button>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
             {noEncontrados.map(sku=>(
@@ -923,8 +931,9 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
 
   const [filtroSector, setFiltroSector]   = useState("Todos");
   const [filtroEstado, setFiltroEstado]   = useState("Todos");
-  const [filtroReventa, setFiltroReventa] = useState("Todos"); // Todos / Propio / Reventa
-  const [filtroVacio, setFiltroVacio]     = useState("Todos"); // Todos / Si / No
+  const [filtroReventa, setFiltroReventa] = useState("Todos");
+  const [filtroVacio, setFiltroVacio]     = useState("Todos");
+  const [filtroTipoPlan, setFiltroTipoPlan] = useState("Todos");
   const [buscar, setBuscar]             = useState("");
   const [orden, setOrden]               = useState({ col:"desc", dir:"asc" });
   const [mostrarS2, setMostrarS2]       = useState(true);
@@ -942,10 +951,11 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
     const eOk = filtroEstado==="Todos" || r.estadoActual===filtroEstado;
     const rOk = filtroReventa==="Todos" || (filtroReventa==="Reventa"?r.art.reventa:!r.art.reventa);
     const vOk = filtroVacio==="Todos"   || (filtroVacio==="Si"?r.art.vacio:!r.art.vacio);
+    const tOk = filtroTipoPlan==="Todos" || (r.art.tipoPlan||"Stock")===filtroTipoPlan;
     const bOk = !buscar.trim() ||
       r.art.sku.toLowerCase().includes(buscar.toLowerCase()) ||
       r.art.desc.toLowerCase().includes(buscar.toLowerCase());
-    return sOk&&eOk&&rOk&&vOk&&bOk;
+    return sOk&&eOk&&rOk&&vOk&&tOk&&bOk;
   }).sort((a,b)=>{
     const d = orden.dir==="asc" ? 1 : -1;
     if (orden.col==="sku")  return d * String(a.art.sku).localeCompare(String(b.art.sku), undefined, {numeric:true});
@@ -1014,11 +1024,11 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
         alertasS={alertasS} alertasS2={alertasS2}/>
 
       {/* Controles */}
-      <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
         <input placeholder="Buscar por código o descripción..." value={buscar}
           onChange={e=>setBuscar(e.target.value)}
           style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,
-            padding:"7px 12px",borderRadius:6,fontSize:12,outline:"none",minWidth:220,flex:1}}/>
+            padding:"7px 12px",borderRadius:6,fontSize:12,outline:"none",width:220,flexShrink:0}}/>
         <select value={filtroSector} onChange={e=>setFiltroSector(e.target.value)}
           style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
             padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
@@ -1031,6 +1041,14 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
           {Object.entries(POLITICA_DEFAULT).map(([k,v])=>(
             <option key={k} value={k}>{v.label}</option>
           ))}
+        </select>
+        <select value={filtroTipoPlan} onChange={e=>setFiltroTipoPlan(e.target.value)}
+          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
+            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
+          <option value="Todos">Todos los tipos</option>
+          <option value="Stock">Stock</option>
+          <option value="Frescos">Frescos</option>
+          <option value="Contra pedido">Contra pedido</option>
         </select>
         <select value={filtroReventa} onChange={e=>setFiltroReventa(e.target.value)}
           style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
@@ -1084,20 +1102,6 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
           </button>
         )}
         <div style={{fontSize:11,color:C.muted,marginLeft:"auto"}}>{rowsFilt.length} artículos</div>
-      </div>
-
-      {/* Leyenda filtro */}
-      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-        {Object.entries(POLITICA_DEFAULT).map(([k,v])=>(
-          <span key={k} style={{
-            background:filtroEstado===k?v.bg:"transparent",
-            color:filtroEstado===k?v.color:C.muted,
-            border:`1px solid ${filtroEstado===k?v.border:C.hairline}`,
-            padding:"2px 10px",borderRadius:10,fontSize:10,fontWeight:600,cursor:"pointer"}}
-            onClick={()=>setFiltroEstado(filtroEstado===k?"Todos":k)}>
-            {v.label}
-          </span>
-        ))}
       </div>
 
       {/* Tabla */}
@@ -1610,7 +1614,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
 
   // Exportar maestro actual como CSV
   function exportarMaestro() {
-    const header = "SKU;Descripcion;Pasta;Familia;Subfamilia;Sector;VidaUtil;TME;ObjPct;KgBatch;KgBatchMin;LeadTime;PesoUnitario;UnBatera;PermiteArrastre;Reventa;Vacio\n";
+    const header = "SKU;Descripcion;Pasta;Familia;Subfamilia;Sector;VidaUtil;TME;ObjPct;KgBatch;KgBatchMin;LeadTime;PesoUnitario;UnBatera;PermiteArrastre;Reventa;Vacio;TipoPlan\n";
     const body = maestro.map(a=>
       [a.sku, a.desc, a.pasta||"", a.familia||"", a.subfamilia||"", a.sector,
        a.vidaUtil, a.tme||"",
@@ -1620,6 +1624,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
        a.permiteArrastre===false?"No":"Si",
        a.reventa?"Si":"No",
        a.vacio?"Si":"No",
+       a.tipoPlan||"Stock",
       ].join(";")
     ).join("\n");
     descargarCSV("maestro_articulos.csv", header+body);
@@ -1660,6 +1665,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
               permiteArrastre: (r[14]?.trim().toLowerCase()||"si")!=="no",
               reventa:       (r[15]?.trim().toLowerCase()||"no")==="si",
               vacio:         (r[16]?.trim().toLowerCase()||"no")==="si",
+              tipoPlan:      r[17]?.trim()||"Stock",
             };
             if (idxPorSku[sku] !== undefined) {
               copia[idxPorSku[sku]] = art;
@@ -1923,6 +1929,17 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                   cursor:rol!=="admin"?"not-allowed":"text"}}/>
             </label>
             <label style={{display:"flex",flexDirection:"column",gap:4}}>
+              <span style={{fontSize:10,color:C.muted}}>Tipo de planificación</span>
+              <select value={form.tipoPlan||"Stock"}
+                onChange={e=>setForm({...form,tipoPlan:e.target.value})}
+                style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,
+                  padding:"6px 10px",borderRadius:5,fontSize:12,outline:"none"}}>
+                <option value="Stock">Stock</option>
+                <option value="Frescos">Frescos</option>
+                <option value="Contra pedido">Contra pedido</option>
+              </select>
+            </label>
+            <label style={{display:"flex",flexDirection:"column",gap:4}}>
               <span style={{fontSize:10,color:C.muted}}>Permite arrastre S→S+1 🔐</span>
               <select value={form.permiteArrastre===false?"no":"si"}
                 disabled={rol!=="admin"}
@@ -1985,6 +2002,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                 title="Seleccionar todos"/>
             </th>}
             <Th>SKU</Th><Th>Descripción</Th><Th>Pasta</Th><Th>Sector</Th><Th>Subfamilia</Th>
+            <Th>Tipo plan</Th>
             <Th right>VU (d) 🔐</Th><Th right>TME 🔐</Th><Th right>Obj. % 🔐</Th><Th right>Obj. días</Th>
             <Th right>Kg/Batch 🔐</Th><Th right>Batch mín 🔐</Th>
             <Th right>Lead 🔐</Th><Th right>Peso u.</Th><Th right>Un/bat.</Th>
@@ -2020,6 +2038,29 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                     </span>
                   </Tv>
                   <Tv dim><span style={{fontSize:10}}>{art.subfamilia||"—"}</span></Tv>
+                  <Tv>
+                    {rol==="admin" ? (
+                      <select value={art.tipoPlan||"Stock"}
+                        onChange={e=>{
+                          const copia=[...maestro];
+                          copia[realIdx]={...copia[realIdx],tipoPlan:e.target.value};
+                          setMaestro(copia);
+                        }}
+                        style={{background:C.surface,border:`1px solid ${C.border}`,
+                          color:C.text,padding:"2px 6px",borderRadius:4,fontSize:11,outline:"none"}}>
+                        <option value="Stock">Stock</option>
+                        <option value="Frescos">Frescos</option>
+                        <option value="Contra pedido">Contra pedido</option>
+                      </select>
+                    ) : (
+                      <span style={{
+                        background: art.tipoPlan==="Frescos"?"#f0fdf4":art.tipoPlan==="Contra pedido"?"#fef3c7":"#f8fafc",
+                        color: art.tipoPlan==="Frescos"?"#15803d":art.tipoPlan==="Contra pedido"?"#92400e":"#64748b",
+                        padding:"2px 7px",borderRadius:3,fontSize:10,fontWeight:600}}>
+                        {art.tipoPlan||"Stock"}
+                      </span>
+                    )}
+                  </Tv>
                   <Tv right dim>{art.vidaUtil}</Tv>
                   {/* TME con alerta si diasObj > TME */}
                   <Tv right>
@@ -2566,8 +2607,17 @@ function PanelCarga({ maestro,
               <div style={{fontSize:11,fontWeight:700,color:"#92400e"}}>
                 SKUs no encontrados — {FUENTES.find(f=>f.id===verDetalle)?.label}
               </div>
-              <button onClick={()=>setVerDetalle(null)}
-                style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <button onClick={()=>descargarCSV(
+                  `skus_no_encontrados_${verDetalle}.csv`,
+                  "SKU\n"+logs[verDetalle].skusNoMatch.join("\n"))}
+                  style={{background:"#fef3c7",border:"1px solid #fde68a",color:"#92400e",
+                    padding:"3px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:600}}>
+                  ↓ Descargar lista
+                </button>
+                <button onClick={()=>setVerDetalle(null)}
+                  style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
+              </div>
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
               {logs[verDetalle].skusNoMatch.map(sku=>(
