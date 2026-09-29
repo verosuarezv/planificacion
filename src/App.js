@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 
 // ─── PALETA ──────────────────────────────────────────────────────────────────
 const C = {
@@ -29,6 +29,23 @@ const _ESTADOS = {
 };
 
 // ─── POLÍTICA DE STOCK ───────────────────────────────────────────────────────
+const SECTOR_COLOR = {
+  "CHORIZOS Y EMB.": { bg:"#fff7ed", color:"#c2410c" },
+  CHORIZOS:          { bg:"#fff7ed", color:"#c2410c" },
+  FRANKFURTERS:      { bg:"#eff6ff", color:"#1d4ed8" },
+  FRANKFURT:         { bg:"#eff6ff", color:"#1d4ed8" },
+  "PASTAS FINAS":    { bg:"#f5f3ff", color:"#6d28d9" },
+  PASTAS:            { bg:"#f5f3ff", color:"#6d28d9" },
+  JAMONERÍA:         { bg:"#f0fdf4", color:"#15803d" },
+  "JAMÓN":           { bg:"#f0fdf4", color:"#15803d" },
+  SECOS:             { bg:"#fefce8", color:"#854d0e" },
+  QUESOS:            { bg:"#f0f9ff", color:"#0369a1" },
+  HAMBURGUESAS:      { bg:"#fdf4ff", color:"#7e22ce" },
+  VEGANOS:           { bg:"#f0fdf4", color:"#166534" },
+  ADEREZOS:          { bg:"#fff1f2", color:"#be123c" },
+  "JAMÓN CRUDO":     { bg:"#fef9c3", color:"#854d0e" },
+};
+
 const POLITICA_DEFAULT = {
   sobrestockRiesgo: { min:0.80, ...C.sobRiesgo },
   sobrestockAlerta: { min:0.30, ...C.sobAlerta },
@@ -51,7 +68,248 @@ function getEstado(diasStock, vidaUtil, fcst) {
 
 
 // ─── MAESTRO INICIAL ─────────────────────────────────────────────────────────
-const MAESTRO_INI = [];
+const MAESTRO_INI = [
+  { sku:"Q700", desc:"JAMÓN COCIDO AL NATURAL EN FETAS (200G.)", pasta:"PJA1400", familia:"JAMÓN COCIDO", subfamilia:"AL NATURAL", sector:"JAMONERÍA", vidaUtil:30, tme:10, leadTime:4, kgBatch:589.6, kgBatchMin:294.8, pesoUnitario:0.2, unBatera:60, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q710", desc:"LOMITO CANADIENSE AL NATURAL EN FETAS (200G.)", pasta:"PJA1500", familia:"LOMITOS", subfamilia:"AL NATURAL", sector:"JAMONERÍA", vidaUtil:30, tme:10, leadTime:4, kgBatch:598.8, kgBatchMin:299.4, pesoUnitario:0.2, unBatera:60, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q720", desc:"PECHUGA DE POLLO AL NATURAL EN FETAS (200G.)", pasta:"PJA1600", familia:"POLLO", subfamilia:"AL NATURAL", sector:"JAMONERÍA", vidaUtil:25, tme:10, leadTime:4, kgBatch:589.0, kgBatchMin:294.5, pesoUnitario:0.2, unBatera:60, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"210", desc:"FIAMBRE DE CERDO ARIZONA", pasta:"PJA895", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:3, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:5.8, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"211", desc:"MITADES FIAMBRE DE CERDO ARIZONA", pasta:"PJA896", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ARIZONA", sector:"JAMONERÍA", vidaUtil:50, tme:23, leadTime:3, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:2.8, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"212", desc:"(cuadrado) FIAMBRE DE CERDO ARIZONA", pasta:"PJA897", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:3, kgBatch:1415.0, kgBatchMin:707.5, pesoUnitario:6.05, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q325", desc:"FIAMBRE DE CERDO ARIZONA CUBETEADO 1X1 (1 KG)", pasta:"PJA898", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ARIZONA", sector:"JAMONERÍA", vidaUtil:30, tme:13, leadTime:2, kgBatch:1250.0, kgBatchMin:625.0, pesoUnitario:1.0, unBatera:10, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q329", desc:"FIAMBRE DE CERDO ARIZONA BARRA FETAS (1 Kg.)", pasta:"PJA899", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ARIZONA", sector:"JAMONERÍA", vidaUtil:30, tme:13, leadTime:2, kgBatch:1250.0, kgBatchMin:625.0, pesoUnitario:1.0, unBatera:15, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q330", desc:"FIAMBRE DE CERDO ARIZONA CUADRADO FETAS (1 KG.)", pasta:"PJA900", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ARIZONA", sector:"JAMONERÍA", vidaUtil:30, tme:13, leadTime:2, kgBatch:1250.0, kgBatchMin:625.0, pesoUnitario:1.0, unBatera:10, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"71", desc:"FIAMBRE DE CERDO ET. ROJA", pasta:"PJA900", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ET ROJA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:3, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:5.75, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"72", desc:"MITADES FIAMBRE DE CERDO ET. ROJA", pasta:"PJA900", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ET ROJA", sector:"JAMONERÍA", vidaUtil:50, tme:23, leadTime:3, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:2.8, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"74", desc:"(cuadrado) FIAMBRE DE CERDO ET. ROJA", pasta:"PJA900", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ET ROJA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:3, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:2.88, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q339", desc:"FIAMBRE DE CERDO ET. ROJA BARRA EN FETAS (1 KG.)", pasta:"PJA900", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ET ROJA", sector:"JAMONERÍA", vidaUtil:30, tme:13, leadTime:2, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:1.0, unBatera:1, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q3391", desc:"FIAMBRE DE CERDO ET. ROJA EN FETAS (200g.)", pasta:"PJA900", familia:"FIAMBRE DE CERDO", subfamilia:"FIAMB. CERDO ET ROJA", sector:"JAMONERÍA", vidaUtil:30, tme:0, leadTime:2, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:0.2, unBatera:60, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"217", desc:"JAMON COCIDO ARIZONA", pasta:"PJA900", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:5.9, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"218", desc:"JAMON COCIDO ARIZONA MITADES", pasta:"PJA900", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ARIZONA", sector:"JAMONERÍA", vidaUtil:50, tme:23, leadTime:4, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:3.0, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"219", desc:"(cuadrado) JAMON COCIDO ARIZONA", pasta:"PJA900", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:6.15, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"2190", desc:"JAMON COCIDO ARIZONA 16x16", pasta:"PJA900", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:6.6, unBatera:3, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q290", desc:"JAMON COCIDO ARIZONA BARRA FETAS (1 KG.)", pasta:"PJA900", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ARIZONA", sector:"JAMONERÍA", vidaUtil:30, tme:13, leadTime:2, kgBatch:1280.0, kgBatchMin:640.0, pesoUnitario:1.0, unBatera:15, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"1151", desc:"JAMÓN COCIDO CONFITERO", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN CONFITERO", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:6.05, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"600", desc:"(cuadrado) JAMON COCIDO ET. DORADA", pasta:"PJA600", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:6.05, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"6000", desc:"JAMON COCIDO ET. DORADA 16x16", pasta:"PJA600", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:6.6, unBatera:3, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"601", desc:"MITADES JAMON COCIDO ET. DORADA", pasta:"PJA600", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:50, tme:23, leadTime:4, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:3.05, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"610", desc:"JAMON COCIDO ET. DORADA CENTENARIO BARRA", pasta:"PJA600", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:6.0, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"613", desc:"JAMON COCIDO ET. DORADA MOLDE D (P/FETEADO)", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:120, tme:0, leadTime:4, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:8.0, unBatera:1, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q2781", desc:"JAMON COCIDO ET. DORADA CUBETEADO 1X1 (1 kg.)", pasta:"PJA600", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:30, tme:0, leadTime:2, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:1.0, unBatera:10, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q279", desc:"JAMON COCIDO ET. DORADA BARRA FETAS (1 KG.)", pasta:"PJA600", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:30, tme:12, leadTime:2, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:1.0, unBatera:15, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q2791", desc:"JAMON COCIDO ET. DORADA CUADRADO FETAS (1 KG.)", pasta:"PJA600", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:30, tme:0, leadTime:2, kgBatch:614.0, kgBatchMin:307.0, pesoUnitario:1.0, unBatera:15, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q610", desc:"JAMON COCIDO ET. DORADA EN FETAS (200G.)", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN DORADO", sector:"JAMONERÍA", vidaUtil:25, tme:10, leadTime:2, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:0.2, unBatera:60, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6668", desc:"(P/Feteado) JAMON COCIDO EXTRA ET. AZUL", pasta:"PJA100", familia:"JAMÓN EXTRA", subfamilia:"JAMÓN ET AZUL", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1481.0, kgBatchMin:740.5, pesoUnitario:8.5, unBatera:4, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"667", desc:"MITADES JAMON COCIDO EXTRA ET. AZUL", pasta:"PJA001", familia:"JAMÓN EXTRA", subfamilia:"JAMÓN ET AZUL", sector:"JAMONERÍA", vidaUtil:50, tme:22, leadTime:4, kgBatch:1412.0, kgBatchMin:706.0, pesoUnitario:3.05, unBatera:8, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"668", desc:"JAMON COCIDO EXTRA ET. AZUL", pasta:"PJA001", familia:"JAMÓN EXTRA", subfamilia:"JAMÓN ET AZUL", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1412.0, kgBatchMin:706.0, pesoUnitario:6.7, unBatera:4, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q212", desc:"JAMON COCIDO EXTRA ET. AZUL EN FETAS (200G.)", pasta:"PJA100", familia:"JAMÓN EXTRA", subfamilia:"JAMÓN ET AZUL", sector:"JAMONERÍA", vidaUtil:25, tme:0, leadTime:2, kgBatch:1481.0, kgBatchMin:740.5, pesoUnitario:0.2, unBatera:80, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"62", desc:"JAMON COCIDO ET. NEGRA MITADES", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ET NEGRA", sector:"JAMONERÍA", vidaUtil:50, tme:23, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:2.8, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"68", desc:"JAMON COCIDO ET. NEGRA", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ET NEGRA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:5.6, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"680", desc:"(cuadrado) JAMON COCIDO ET. NEGRA", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ET NEGRA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:5.9, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"688", desc:"JAMON COCIDO ET. NEGRA CENTENARIO REDONDO", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ET NEGRA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:6.0, unBatera:4, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q253", desc:"JAMON COCIDO ET. NEGRA EN FETAS (200G.)", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ET NEGRA", sector:"JAMONERÍA", vidaUtil:25, tme:10, leadTime:2, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:0.2, unBatera:100, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"550", desc:"Jamon Et. Negra Confitero", pasta:"PJA550", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ET NEGRA", sector:"JAMONERÍA", vidaUtil:120, tme:0, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:6.0, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"551", desc:"Jamon Et. Negra Confitero MITADES", pasta:"PJA550", familia:"JAMÓN COCIDO", subfamilia:"JAMÓN ET NEGRA", sector:"JAMONERÍA", vidaUtil:120, tme:0, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:3.0, unBatera:12, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"115", desc:"(cuadrado) FIAMBRE DE CERDO PLUS CENTENARIO", pasta:"PJA800", familia:"FIAMBRE DE CERDO", subfamilia:"JAMÓN LÍNEA PLUS", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:3, kgBatch:538.0, kgBatchMin:269.0, pesoUnitario:5.8, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"116", desc:"FIAMBRE DE CERDO PLUS CENTENARIO", pasta:"PJA800", familia:"FIAMBRE DE CERDO", subfamilia:"JAMÓN LÍNEA PLUS", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:3, kgBatch:538.0, kgBatchMin:269.0, pesoUnitario:5.5, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"3161", desc:"JAMON COCIDO EXTRA TRADICIONAL MITAD", pasta:"PJA1300", familia:"JAMÓN EXTRA", subfamilia:"JAMÓN TRADICIONAL", sector:"JAMONERÍA", vidaUtil:50, tme:19, leadTime:4, kgBatch:590.81, kgBatchMin:295.4, pesoUnitario:3.3, unBatera:8, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q200", desc:"JAMON COCIDO EXTRA TRADICIONAL EN FETAS (200g.)", pasta:"PJA1300", familia:"JAMÓN EXTRA", subfamilia:"JAMÓN TRADICIONAL", sector:"JAMONERÍA", vidaUtil:25, tme:10, leadTime:2, kgBatch:590.81, kgBatchMin:295.4, pesoUnitario:0.2, unBatera:1, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"2110", desc:"LOMITO CANADIENSE T. Inglesa", pasta:"PJA700", familia:"LOMITOS", subfamilia:"LOMITO CAN T. ING", sector:"JAMONERÍA", vidaUtil:50, tme:17, leadTime:4, kgBatch:1342.0, kgBatchMin:671.0, pesoUnitario:1.5, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q2293", desc:"LOMITO CANADIENSE T. INGLESA FETAS (200G.)", pasta:"PJA700", familia:"LOMITOS", subfamilia:"LOMITO CAN T. ING", sector:"JAMONERÍA", vidaUtil:25, tme:12, leadTime:2, kgBatch:1342.0, kgBatchMin:671.0, pesoUnitario:0.2, unBatera:60, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"110", desc:"LOMITO CANADIENSE MITADES", pasta:"PJA700", familia:"LOMITOS", subfamilia:"LOMITO CANADIENSE", sector:"JAMONERÍA", vidaUtil:50, tme:17, leadTime:4, kgBatch:1342.0, kgBatchMin:671.0, pesoUnitario:1.5, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"111", desc:"LOMITO CANADIENSE ENTERO", pasta:"PJA700", familia:"LOMITOS", subfamilia:"LOMITO CANADIENSE", sector:"JAMONERÍA", vidaUtil:50, tme:17, leadTime:4, kgBatch:1342.0, kgBatchMin:671.0, pesoUnitario:2.0, unBatera:20, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q293", desc:"LOMITO CANADIENSE EN FETAS (200 G.)", pasta:"PJA700", familia:"LOMITOS", subfamilia:"LOMITO CANADIENSE", sector:"JAMONERÍA", vidaUtil:25, tme:10, leadTime:2, kgBatch:1342.0, kgBatchMin:671.0, pesoUnitario:0.2, unBatera:80, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q295", desc:"LOMITO CANADIENSE EN FETAS (1 KG.)", pasta:"PJA700", familia:"LOMITOS", subfamilia:"LOMITO CANADIENSE", sector:"JAMONERÍA", vidaUtil:30, tme:12, leadTime:2, kgBatch:1342.0, kgBatchMin:671.0, pesoUnitario:1.0, unBatera:15, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"108", desc:"LOMITO COCIDO MITADES", pasta:"PJA730", familia:"LOMITOS", subfamilia:"LOMITO COCIDO", sector:"JAMONERÍA", vidaUtil:50, tme:19, leadTime:4, kgBatch:1274.0, kgBatchMin:637.0, pesoUnitario:1.0, unBatera:18, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"109", desc:"LOMITO COCIDO", pasta:"PJA730", familia:"LOMITOS", subfamilia:"LOMITO COCIDO", sector:"JAMONERÍA", vidaUtil:50, tme:19, leadTime:4, kgBatch:1274.0, kgBatchMin:637.0, pesoUnitario:2.0, unBatera:8, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"70", desc:"PALETA COCIDA ET. NEGRA", pasta:"PJA500", familia:"JAMÓN COCIDO", subfamilia:"PALETA ET NEGRA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1318.0, kgBatchMin:659.0, pesoUnitario:5.8, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"701", desc:"PANCETA AMERICANA", pasta:"PIN003", familia:"PANCETA AMERICANA", subfamilia:"PANCETA AMERICANA", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:4, kgBatch:3768.09, kgBatchMin:1884.05, pesoUnitario:2.4, unBatera:10, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"76", desc:"PANCETA AHUMADA BACON MITAD VACIO", pasta:"PJA400", familia:"PANCETA BACON", subfamilia:"PANCETA BACON", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:5, kgBatch:1080.0, kgBatchMin:540.0, pesoUnitario:1.95, unBatera:15, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"760", desc:"PANCETA AHUMADA BACON  EN TROZOS/VACIO", pasta:"PJA400", familia:"PANCETA BACON", subfamilia:"PANCETA BACON", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:5, kgBatch:1080.0, kgBatchMin:540.0, pesoUnitario:0.25, unBatera:70, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q247", desc:"PANCETA AHUMADA BACON FETAS (1 KG.)", pasta:"PJA400", familia:"PANCETA BACON", subfamilia:"PANCETA BACON", sector:"JAMONERÍA", vidaUtil:40, tme:15, leadTime:2, kgBatch:300.0, kgBatchMin:300.0, pesoUnitario:1.0, unBatera:15, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"77", desc:"PANCETA AHUMADA ESPECIAL", pasta:"PJA300", familia:"PANCETA ESPECIAL", subfamilia:"PANCETA ESPECIAL", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:5, kgBatch:780.0, kgBatchMin:390.0, pesoUnitario:2.15, unBatera:10, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"771", desc:"PANCETA AHUMADA ESPECIAL ENTERA", pasta:"PJA300", familia:"PANCETA ESPECIAL", subfamilia:"PANCETA ESPECIAL", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:5, kgBatch:780.0, kgBatchMin:390.0, pesoUnitario:3.3, unBatera:6, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q233", desc:"PANCETA AHUMADA ESPECIAL EN FETAS (200G.)", pasta:"PJA300", familia:"PANCETA ESPECIAL", subfamilia:"PANCETA ESPECIAL", sector:"JAMONERÍA", vidaUtil:25, tme:0, leadTime:2, kgBatch:780.0, kgBatchMin:390.0, pesoUnitario:0.2, unBatera:80, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q238", desc:"PANCETA AHUMADA ESPECIAL FETAS (1 KG.)", pasta:"PJA300", familia:"PANCETA ESPECIAL", subfamilia:"PANCETA ESPECIAL", sector:"JAMONERÍA", vidaUtil:40, tme:15, leadTime:2, kgBatch:1200.0, kgBatchMin:600.0, pesoUnitario:1.0, unBatera:15, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q239", desc:"PANCETA AHUMADA ESPECIAL CUBETEADO AL VACIO (1kg)", pasta:"PJA300", familia:"PANCETA ESPECIAL", subfamilia:"PANCETA ESPECIAL", sector:"JAMONERÍA", vidaUtil:25, tme:15, leadTime:4, kgBatch:1200.0, kgBatchMin:600.0, pesoUnitario:1.0, unBatera:15, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"65", desc:"PASTRAMI CENTENARIO", pasta:"", familia:"JAMÓN COCIDO", subfamilia:"PASTRAMI", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:4, kgBatch:400.0, kgBatchMin:200.0, pesoUnitario:2.45, unBatera:10, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"665", desc:"PASTRAMI CENTENARIO MITADES", pasta:"", familia:"JAMÓN COCIDO", subfamilia:"PASTRAMI", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:4, kgBatch:400.0, kgBatchMin:200.0, pesoUnitario:1.25, unBatera:20, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q225", desc:"PASTRAMI CENTENARIO FETAS (1 KG.)", pasta:"", familia:"JAMÓN COCIDO", subfamilia:"PASTRAMI", sector:"JAMONERÍA", vidaUtil:60, tme:0, leadTime:2, kgBatch:400.0, kgBatchMin:200.0, pesoUnitario:1.0, unBatera:15, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"757", desc:"PECHUGA DE POLLO AHUMADA", pasta:"PJA1700", familia:"POLLO", subfamilia:"PECHUGA DE POLLO", sector:"JAMONERÍA", vidaUtil:50, tme:12, leadTime:4, kgBatch:590.0, kgBatchMin:295.0, pesoUnitario:3.2, unBatera:0, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"758", desc:"PECHUGA DE POLLO AHUMADA MITADES", pasta:"PJA1700", familia:"POLLO", subfamilia:"PECHUGA DE POLLO", sector:"JAMONERÍA", vidaUtil:50, tme:17, leadTime:4, kgBatch:590.0, kgBatchMin:295.0, pesoUnitario:1.6, unBatera:0, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q757", desc:"PECHUGA DE POLLO AHUMADA EN FETAS (200G.)", pasta:"PJA1700", familia:"POLLO", subfamilia:"PECHUGA DE POLLO", sector:"JAMONERÍA", vidaUtil:25, tme:10, leadTime:2, kgBatch:590.0, kgBatchMin:295.0, pesoUnitario:0.2, unBatera:60, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q215", desc:"PUNTAS JAMÓN COCIDO CENTENARIO", pasta:"PJA900", familia:"JAMÓN COCIDO", subfamilia:"PUNTAS", sector:"JAMONERÍA", vidaUtil:25, tme:9, leadTime:4, kgBatch:500, kgBatchMin:500, pesoUnitario:0.75, unBatera:48, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q236", desc:"PUNTAS PANCETA CENTENARIO", pasta:"PJA300", familia:"PANCETA ESPECIAL", subfamilia:"PUNTAS", sector:"JAMONERÍA", vidaUtil:25, tme:12, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:0.75, unBatera:48, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q298", desc:"PUNTAS LOMITO AHUMADO CENTENARIO", pasta:"PJA730", familia:"LOMITOS", subfamilia:"PUNTAS", sector:"JAMONERÍA", vidaUtil:25, tme:9, leadTime:4, kgBatch:500, kgBatchMin:500, pesoUnitario:0.75, unBatera:48, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q3384", desc:"PUNTAS FIAMBRE DE CERDO CENTENARIO", pasta:"", familia:"FIAMBRE DE CERDO", subfamilia:"PUNTAS", sector:"JAMONERÍA", vidaUtil:25, tme:9, leadTime:2, kgBatch:599.0, kgBatchMin:299.5, pesoUnitario:0.75, unBatera:48, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"41", desc:"QUESO DE CERDO MITADES", pasta:"PJA1200", familia:"SANDWICHERA", subfamilia:"QUESO DE CERDO", sector:"JAMONERÍA", vidaUtil:60, tme:23, leadTime:4, kgBatch:302.0, kgBatchMin:302.0, pesoUnitario:2.05, unBatera:12, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"250", desc:"F. DE CERDO SANDWICHERA", pasta:"PJA1000", familia:"SANDWICHERA", subfamilia:"SANDWICH ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1415.0, kgBatchMin:707.5, pesoUnitario:5.75, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"252", desc:"F. DE CERDO/VAC SANDW. CLASICA ARIZ (cuadrado)", pasta:"PJA1100", familia:"SANDWICHERA", subfamilia:"SANDWICH ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1415.0, kgBatchMin:707.5, pesoUnitario:6.0, unBatera:15, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"254", desc:"(cuadrado) F. DE CERDO SANDWICHERA", pasta:"PJA1000", familia:"SANDWICHERA", subfamilia:"SANDWICH ARIZONA", sector:"JAMONERÍA", vidaUtil:120, tme:68, leadTime:4, kgBatch:1415.0, kgBatchMin:707.5, pesoUnitario:6.0, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"255", desc:"(cuadrado) MITADES F. DE CERDO SANDWICHERA", pasta:"PJA1000", familia:"SANDWICHERA", subfamilia:"SANDWICH ARIZONA", sector:"JAMONERÍA", vidaUtil:50, tme:25, leadTime:4, kgBatch:1415.0, kgBatchMin:707.5, pesoUnitario:3.0, unBatera:12, objDias:10, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q368", desc:"FIAMBRE DE CERDO SANDWICHERA ARIZONA BARRA FETAS (1 KG.)", pasta:"PJA1000", familia:"SANDWICHERA", subfamilia:"SANDWICH ARIZONA", sector:"JAMONERÍA", vidaUtil:30, tme:12, leadTime:2, kgBatch:1415.0, kgBatchMin:707.5, pesoUnitario:1.0, unBatera:15, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"200", desc:"CHORIZO ARIZONA PREMIUM", pasta:"PCH200", familia:"CHORIZO ARIZONA", subfamilia:"CHORIZO ARIZONA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:3, kgBatch:1376.07, kgBatchMin:688.03, pesoUnitario:2.8, unBatera:9, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"222", desc:"CHORIZO ARIZONA PREMIUM VACIO x 10 un.", pasta:"PCH200", familia:"CHORIZO ARIZONA", subfamilia:"CHORIZO ARIZONA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:3, kgBatch:1376.07, kgBatchMin:688.03, pesoUnitario:1.3, unBatera:18, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4052", desc:"CHORIZO ARIZONA X 3", pasta:"PCH200", familia:"CHORIZO ARIZONA", subfamilia:"CHORIZO ARIZONA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:1376.07, kgBatchMin:688.03, pesoUnitario:0.35, unBatera:50, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"215", desc:"CHORIZO ARIZONA X7", pasta:"PCH200", familia:"CHORIZO ARIZONA", subfamilia:"CHORIZO ARIZONA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:0, leadTime:4, kgBatch:1376.07, kgBatchMin:688.03, pesoUnitario:0.93, unBatera:0, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4056", desc:"CHORIZO CHEDDAR BACON X 3", pasta:"PCH1000", familia:"SABORES", subfamilia:"CHORIZO CHEDDAR BACON", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:630.45, kgBatchMin:315.23, pesoUnitario:0.35, unBatera:50, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"11", desc:"CHORIZO EXTRA RUEDA", pasta:"pch100", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1437.0, kgBatchMin:718.5, pesoUnitario:0.5, unBatera:20, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Contra pedido" },
+  { sku:"13", desc:"CHORIZO EXTRA", pasta:"PCH001", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:3.5, unBatera:4, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Frescos" },
+  { sku:"14", desc:"CHORIZO EXTRA PRECOCIDO x 10 MINIPACK", pasta:"PCH001", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:3, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:1.3, unBatera:20, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"15", desc:"CHORIZO EXTRA EXTRA LARGO", pasta:"PCH001", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:4.85, unBatera:4, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Frescos" },
+  { sku:"1512", desc:"CHORIZO EXTRA CENTENARIO X 2 XL", pasta:"PCH001", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:21, leadTime:4, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:0.39, unBatera:40, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"2", desc:"CHORIZO EXTRA SPETO", pasta:"PCH001", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:1.55, unBatera:12, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Frescos" },
+  { sku:"21", desc:"CHORIZO EXTRA ESPETO AL VACIO X 6", pasta:"PCH001", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:0.36, unBatera:40, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4050", desc:"CHORIZO EXTRA CENTENARIO X 3", pasta:"PCH001", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:21, leadTime:4, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:0.35, unBatera:45, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"1500", desc:"CHORIZO SIN SAL X2", pasta:"PCH1500", familia:"EXTRA", subfamilia:"CHORIZO EXTRA", sector:"CHORIZOS Y EMB.", vidaUtil:45, tme:0, leadTime:4, kgBatch:300.0, kgBatchMin:300.0, pesoUnitario:0.23, unBatera:60, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4038", desc:"PACK LA OLLA - Ch. Extra Ahumado + Panceta Bacon", pasta:"pch100", familia:"SABORES", subfamilia:"CHORIZO EXTRA AHUMAD", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:3, kgBatch:397.55, kgBatchMin:397.55, pesoUnitario:0.45, unBatera:42, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4053", desc:"CHORIZO EXTRA AHUMADO CENTENARIO X 3", pasta:"PCH600", familia:"SABORES", subfamilia:"CHORIZO EXTRA AHUMAD", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:397.55, kgBatchMin:397.55, pesoUnitario:0.35, unBatera:50, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4051", desc:"CHORIZO PURO CERDO CENTENARIO X 3", pasta:"PCH100", familia:"CHORIZO P. CERDO", subfamilia:"CHORIZO P. CERDO", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:1390.39, kgBatchMin:695.2, pesoUnitario:0.35, unBatera:50, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"9", desc:"CHORIZO PARRILLERO PURO CERDO", pasta:"PCH100", familia:"CHORIZO P. CERDO", subfamilia:"CHORIZO P. CERDO", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1390.39, kgBatchMin:695.2, pesoUnitario:3.5, unBatera:4, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Frescos" },
+  { sku:"90", desc:"CHORIZO PARRILLERO PURO CERDO VACIO", pasta:"PCH100", familia:"CHORIZO P. CERDO", subfamilia:"CHORIZO P. CERDO", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:3, kgBatch:1390.39, kgBatchMin:695.2, pesoUnitario:1.3, unBatera:20, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"900", desc:"CHORIZO PURO CERDO RUEDA", pasta:"pch100", familia:"CHORIZO P. CERDO", subfamilia:"CHORIZO P. CERDO", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1410.0, kgBatchMin:705.0, pesoUnitario:0.5, unBatera:20, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Contra pedido" },
+  { sku:"901", desc:"CHORIZO PURO CERDO RUEDA BUFFET", pasta:"pch100", familia:"CHORIZO P. CERDO", subfamilia:"CHORIZO P. CERDO", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1410.0, kgBatchMin:705.0, pesoUnitario:4.0, unBatera:2, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Contra pedido" },
+  { sku:"902", desc:"CHORIZO PURO CERDO XL", pasta:"pch100", familia:"CHORIZO P. CERDO", subfamilia:"CHORIZO P. CERDO", sector:"CHORIZOS Y EMB.", vidaUtil:12, tme:2, leadTime:3, kgBatch:1410.0, kgBatchMin:705.0, pesoUnitario:4.8, unBatera:4, objDias:2, ter:1, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Contra pedido" },
+  { sku:"4057", desc:"CHORIZOS CENTENARIO MIX. DEGUSTACIÓN", pasta:"", familia:"SABORES", subfamilia:"CHORIZO PACK DEGUSTACION", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:500, kgBatchMin:500, pesoUnitario:0.62, unBatera:36, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4060", desc:"CHORIS DEL MUNDO CENTENARIO", pasta:"", familia:"SABORES", subfamilia:"CHORIZO PACK DEGUSTACION", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:500, kgBatchMin:500, pesoUnitario:0.62, unBatera:36, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"40601", desc:"CHORIZO ESPAÑOL AL VACIO X 3", pasta:"", familia:"SABORES", subfamilia:"CHORIZO PACK DEGUSTACION", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:26, leadTime:4, kgBatch:592.13, kgBatchMin:296.06, pesoUnitario:0.37, unBatera:50, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"12", desc:"CHORIZO COLORADO VACÍO x 10 un.", pasta:"", familia:"SABORES", subfamilia:"CHORIZOS COLORADO", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:3, kgBatch:209.91, kgBatchMin:209.91, pesoUnitario:1.3, unBatera:20, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4055", desc:"CHORIZO COLORADO (ESPAÑOL) X 3", pasta:"", familia:"SABORES", subfamilia:"CHORIZOS COLORADO", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:209.91, kgBatchMin:209.91, pesoUnitario:0.35, unBatera:50, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4054", desc:"CHORIZO GOURMET CENTENARIO X 3", pasta:"", familia:"SABORES", subfamilia:"CHORIZOS GOURMET", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:453.1, kgBatchMin:226.55, pesoUnitario:0.35, unBatera:50, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4059", desc:"CHORIZO DEL CAMPO A LA MESA X 3", pasta:"", familia:"CHORIZOS TA-TA", subfamilia:"CHORIZOS TA-TA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:23, leadTime:4, kgBatch:1436.97, kgBatchMin:718.49, pesoUnitario:0.35, unBatera:45, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"40591", desc:"CHORIZO DEL CAMPO A LA MESA X 10", pasta:"", familia:"CHORIZOS TA-TA", subfamilia:"CHORIZOS TA-TA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:0, leadTime:4, kgBatch:1446.0, kgBatchMin:723.0, pesoUnitario:1.3, unBatera:18, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4006", desc:"HUNGARAS MINIPACK", pasta:"PCH500", familia:"HÚNGARAS", subfamilia:"HÚNGARAS", sector:"CHORIZOS Y EMB.", vidaUtil:45, tme:23, leadTime:5, kgBatch:209.91, kgBatchMin:209.91, pesoUnitario:0.35, unBatera:67, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"49", desc:"MORCILLAS DULCES (sueltas)", pasta:"PCH300", familia:"MORCILLAS", subfamilia:"MORCILLA DULCE", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:15, leadTime:4, kgBatch:164.33, kgBatchMin:164.33, pesoUnitario:1.85, unBatera:7, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"5010", desc:"MORCILLAS DULCES x 2 (x unid)", pasta:"PCH300", familia:"MORCILLAS", subfamilia:"MORCILLA DULCE", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:13, leadTime:3, kgBatch:164.33, kgBatchMin:164.33, pesoUnitario:0.25, unBatera:80, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"45", desc:"MORCILLAS SALADAS (sueltas)", pasta:"PCH400", familia:"MORCILLAS", subfamilia:"MORCILLA SALADA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:15, leadTime:4, kgBatch:203.6, kgBatchMin:203.6, pesoUnitario:1.85, unBatera:12, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"5009", desc:"MORCILLAS SALADAS x 2 (x unid)", pasta:"PCH400", familia:"MORCILLAS", subfamilia:"MORCILLA SALADA", sector:"CHORIZOS Y EMB.", vidaUtil:60, tme:13, leadTime:3, kgBatch:203.6, kgBatchMin:203.6, pesoUnitario:0.25, unBatera:80, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4004", desc:"SALCHICHA CHEDDAR BACON", pasta:"PCH1000", familia:"SALCHICHAS", subfamilia:"SALCHICHA PARRILLERA", sector:"CHORIZOS Y EMB.", vidaUtil:30, tme:9, leadTime:5, kgBatch:630.45, kgBatchMin:315.23, pesoUnitario:0.3, unBatera:50, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"4005", desc:"SALCHICHA PARRILLERA MINI PACK", pasta:"PCH800", familia:"SALCHICHAS", subfamilia:"SALCHICHA PARRILLERA", sector:"CHORIZOS Y EMB.", vidaUtil:30, tme:9, leadTime:5, kgBatch:201.07, kgBatchMin:201.07, pesoUnitario:0.3, unBatera:90, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"97", desc:"FRANFRUTER EXTRA CENTENARIO x 8 un.", pasta:"ppf600", familia:"FRANKFURTERS", subfamilia:"FRANFRUTER EXTRA", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:2, kgBatch:283.0, kgBatchMin:283.0, pesoUnitario:0.6, unBatera:60, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"970", desc:"FRANFRUTER EXTRA CENTENARIO x 24 un.", pasta:"PPF600", familia:"FRANKFURTERS", subfamilia:"FRANFRUTER EXTRA", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:3, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:1.2, unBatera:18, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"971", desc:"FRANFRUTER EXTRA CENTENARIO x 4 un.", pasta:"PPF600", familia:"FRANKFURTERS", subfamilia:"FRANFRUTER EXTRA", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:3, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:0.2, unBatera:108, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"972", desc:"FRANFRUTER EXTRA CENTENARIO 8un. + 4un.", pasta:"PPF600", familia:"FRANKFURTERS", subfamilia:"FRANFRUTER EXTRA", sector:"FRANKFURTERS", vidaUtil:45, tme:15, leadTime:1, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:0.7, unBatera:30, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"206", desc:"FRANKFURTERS ARIZONA x 2.5 Kg.", pasta:"PPF800", familia:"FRANKFURTERS", subfamilia:"FRANKFURTER ARIZONA", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:3, kgBatch:295.03, kgBatchMin:295.03, pesoUnitario:2.4, unBatera:11, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"213", desc:"FRANKFURTERS ARIZONA S/LARGO x 1.5 Kg.", pasta:"PPF800", familia:"FRANKFURTERS", subfamilia:"FRANKFURTER ARIZONA", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:1, kgBatch:295.03, kgBatchMin:295.03, pesoUnitario:1.5, unBatera:20, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"214", desc:"FRANKFURTERS ARIZONA x 8 un.", pasta:"PPF800", familia:"FRANKFURTERS", subfamilia:"FRANKFURTER ARIZONA", sector:"FRANKFURTERS", vidaUtil:45, tme:15, leadTime:2, kgBatch:295.03, kgBatchMin:295.03, pesoUnitario:0.48, unBatera:55, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"216", desc:"FRANKFURTERS ARIZONA x 1.2 Kg.", pasta:"PPF800", familia:"FRANKFURTERS", subfamilia:"FRANKFURTER ARIZONA", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:2, kgBatch:295.03, kgBatchMin:295.03, pesoUnitario:1.15, unBatera:25, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"5068", desc:"FRANKFURTERS CENTE x 1Kg.+ FRANFRUTER EXTRA x 4 un.", pasta:"PPF600", familia:"FRANKFURTERS", subfamilia:"FRANKFURTERS CENTE", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:1, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:1.2, unBatera:0, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"95", desc:"FRANKFURTERS CENTENARIO x 1 Kg.", pasta:"PPF600", familia:"FRANKFURTERS", subfamilia:"FRANKFURTERS CENTE", sector:"FRANKFURTERS", vidaUtil:45, tme:18, leadTime:1, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:1.1, unBatera:26, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"958", desc:"FRANKFURTERS CENTENARIO x 8 UN", pasta:"ppf600", familia:"FRANKFURTERS", subfamilia:"FRANKFURTERS CENTE", sector:"FRANKFURTERS", vidaUtil:45, tme:0, leadTime:1, kgBatch:283.0, kgBatchMin:283.0, pesoUnitario:0.48, unBatera:52, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"96", desc:"FRANKFURTERS CENTENARIO x 2,5 Kg.", pasta:"PPF600", familia:"FRANKFURTERS", subfamilia:"FRANKFURTERS CENTE", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:2, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:2.5, unBatera:11, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"98", desc:"FRANKFURTERS CENTENARIO S/LARGO x20 un", pasta:"PPF600", familia:"FRANKFURTERS", subfamilia:"FRANKFURTERS CENTE", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:3, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:1.5, unBatera:20, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"5041", desc:"LIVIANITOS CENTENARIO x 8", pasta:"ppf600", familia:"FRANKFURTERS", subfamilia:"LIVIANITOS CENTENARI", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:1, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:0.3, unBatera:80, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"5044", desc:"LIVIANITOS CENTENARIO x 4", pasta:"ppf600", familia:"FRANKFURTERS", subfamilia:"LIVIANITOS CENTENARI", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:1, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:0.15, unBatera:105, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"5061", desc:"LIVIANITOS CENTENARIO PACK (8 und. + 1 x 4 und.)", pasta:"ppf600", familia:"FRANKFURTERS", subfamilia:"LIVIANITOS CENTENARI", sector:"FRANKFURTERS", vidaUtil:45, tme:17, leadTime:1, kgBatch:283.77, kgBatchMin:283.77, pesoUnitario:0.45, unBatera:35, objDias:9, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q901", desc:"Puntas Mortadela Centenario", pasta:"PPF101", familia:"MORTADELAS", subfamilia:"PUNTAS", sector:"PASTAS FINAS", vidaUtil:25, tme:12, leadTime:3, kgBatch:500, kgBatchMin:500, pesoUnitario:0.75, unBatera:48, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"38", desc:"CHORIZO RUSO", pasta:"PPF500", familia:"RUSO Y PATÉ", subfamilia:"CHORIZO RUSO", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:465.8, kgBatchMin:232.9, pesoUnitario:1.5, unBatera:15, objDias:12, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"87", desc:"LEONESA CON JAMON MITADES", pasta:"PPF030", familia:"LEONESAS", subfamilia:"LEONESA CON JAMÓN", sector:"PASTAS FINAS", vidaUtil:75, tme:33, leadTime:5, kgBatch:578.9, kgBatchMin:289.45, pesoUnitario:2.45, unBatera:12, objDias:15, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"84", desc:"LEONESA FANTASIA MITADES", pasta:"PPF060", familia:"LEONESAS", subfamilia:"LEONESA FANTASÍA", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:5, kgBatch:359.0, kgBatchMin:359.0, pesoUnitario:2.65, unBatera:12, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"53", desc:"LEONESA PREMIUM MITADES", pasta:"PPF001", familia:"LEONESAS", subfamilia:"LEONESA PREMIUM", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:5, kgBatch:289.9, kgBatchMin:289.9, pesoUnitario:2.4, unBatera:12, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q053", desc:"LEONESA PREMIUM EN FETAS (200g.)", pasta:"PPF001", familia:"LEONESAS", subfamilia:"LEONESA PREMIUM", sector:"PASTAS FINAS", vidaUtil:30, tme:0, leadTime:3, kgBatch:289.9, kgBatchMin:289.9, pesoUnitario:0.2, unBatera:60, objDias:6, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"224", desc:"MORTADELA T. Inglesa", pasta:"PPF100", familia:"MORTADELAS", subfamilia:"MORT T. INGLESA", sector:"PASTAS FINAS", vidaUtil:60, tme:36, leadTime:3, kgBatch:292.0, kgBatchMin:292.0, pesoUnitario:9.4, unBatera:2, objDias:12, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q2903", desc:"MORTADELA T. INGLESA FETAS (200G.)", pasta:"PPF101", familia:"MORTADELAS", subfamilia:"MORT T. INGLESA", sector:"PASTAS FINAS", vidaUtil:25, tme:29, leadTime:1, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:0.2, unBatera:60, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"201", desc:"MORTADELA ARIZONA FINA", pasta:"PPF401", familia:"MORTADELAS", subfamilia:"MORTADELA ARIZONA", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:5.15, unBatera:5, objDias:12, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"2012", desc:"MORTADELA ARIZONA BOCHA MITADES", pasta:"PPF401", familia:"MORTADELAS", subfamilia:"MORTADELA ARIZONA", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:9.8, unBatera:4, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"202", desc:"MORTADELA ARIZONA GRUESA", pasta:"PPF401", familia:"MORTADELAS", subfamilia:"MORTADELA ARIZONA", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:6.1, unBatera:4, objDias:12, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"203", desc:"MORTADELA ARIZONA FINA MITADES", pasta:"PPF401", familia:"MORTADELAS", subfamilia:"MORTADELA ARIZONA", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:2.45, unBatera:12, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"204", desc:"MORTADELA ARIZONA GRUESA MITADES", pasta:"PPF401", familia:"MORTADELAS", subfamilia:"MORTADELA ARIZONA", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:3.0, unBatera:8, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"23", desc:"MORTADELA CENTENARIO BOLOGNESA MITADES", pasta:"PPF101", familia:"MORTADELAS", subfamilia:"MORTADELA CENTE", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:292.0, kgBatchMin:292.0, pesoUnitario:2.3, unBatera:12, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"242", desc:"MORTADELA CENTENARIO BOCHA MITADES", pasta:"PPF101", familia:"MORTADELAS", subfamilia:"MORTADELA CENTE", sector:"PASTAS FINAS", vidaUtil:60, tme:33, leadTime:3, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:4.45, unBatera:4, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"28", desc:"MORTADELA CENTENARIO C/ MORRON MITADES", pasta:"PPF101", familia:"MORTADELAS", subfamilia:"MORTADELA CENTE", sector:"PASTAS FINAS", vidaUtil:60, tme:28, leadTime:3, kgBatch:292.0, kgBatchMin:292.0, pesoUnitario:2.4, unBatera:12, objDias:12, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q903", desc:"MORTADELA BOLOGNESA FETAS (200g.)", pasta:"PPF101", familia:"MORTADELAS", subfamilia:"MORTADELA CENTE", sector:"PASTAS FINAS", vidaUtil:25, tme:14, leadTime:1, kgBatch:339.23, kgBatchMin:339.23, pesoUnitario:0.2, unBatera:60, objDias:5, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"25", desc:"MORTADELA CENTENARIO PLUS MITADES", pasta:"PPF101", familia:"MORTADELAS", subfamilia:"MORTADELA LÍNEA PLUS", sector:"PASTAS FINAS", vidaUtil:75, tme:33, leadTime:3, kgBatch:294.0, kgBatchMin:294.0, pesoUnitario:2.2, unBatera:12, objDias:15, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"5014", desc:"PATE DE JAMON + PATE DE LENGUA", pasta:"PACK", familia:"", subfamilia:"RUSO Y PATÉ", sector:"PATÉ VARIEDADES", vidaUtil:60, tme:45, leadTime:4, kgBatch:500, kgBatchMin:200.0, pesoUnitario:3.0, unBatera:0, objDias:12, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q806", desc:"PUNTAS SALAME CENTENARIO", pasta:"PSE400", familia:"MILANES", subfamilia:"PUNTAS", sector:"SECOS", vidaUtil:40, tme:23, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:0.75, unBatera:48, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q818", desc:"PUNTAS BONDIOLA CENTENARIO", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"PUNTAS", sector:"SECOS", vidaUtil:40, tme:68, leadTime:5, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.75, unBatera:48, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"282", desc:"F. SECA BONDIOLA  T. Inglesa", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"BON T. INGLESA", sector:"SECOS", vidaUtil:90, tme:68, leadTime:40, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.1, unBatera:18, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q2814", desc:"F. SECA BONDIOLA T. INGLESA FETAS (200G.)", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"BON T. INGLESA", sector:"SECOS", vidaUtil:40, tme:68, leadTime:1, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.2, unBatera:60, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"82", desc:"F. SECA BONDIOLA CENTENARIO", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"BONDIOLA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:40, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.1, unBatera:16, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"86", desc:"F. SECA BONDIOLA CENTENARIO VACIO S/PIEL", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"BONDIOLA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:40, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.5, unBatera:15, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q814", desc:"F. SECA BONDIOLA CENTENARIO EN FETAS (200G.)", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"BONDIOLA CENTENARIO", sector:"SECOS", vidaUtil:40, tme:68, leadTime:1, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.2, unBatera:60, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q817", desc:"F. SECA BONDIOLA CENTENARIO EN FETAS (1 KG.)", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"BONDIOLA CENTENARIO", sector:"SECOS", vidaUtil:120, tme:68, leadTime:1, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.0, unBatera:15, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q819", desc:"F. SECA BONDIOLA CENTENARIO CUBETEADO (1KG.)", pasta:"PSE001", familia:"BONDIOLA Y SERRANO", subfamilia:"BONDIOLA CENTENARIO", sector:"SECOS", vidaUtil:120, tme:60, leadTime:3, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.5, unBatera:20, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6669", desc:"F. SECA FINCETA LONGANIZA ARIZONA", pasta:"PSE500", familia:"FINCETAS", subfamilia:"F. SECA ARIZONA CORT", sector:"SECOS", vidaUtil:90, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.2, unBatera:6, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"6670", desc:"F. SECA FINCETA LONGANIZA ARIZONA MITADES", pasta:"PSE500", familia:"FINCETAS", subfamilia:"F. SECA ARIZONA CORT", sector:"SECOS", vidaUtil:120, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.5, unBatera:12, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6671", desc:"F. SECA FINCETA P. FINO ARIZONA", pasta:"PSE400", familia:"FINCETAS", subfamilia:"F. SECA ARIZONA CORT", sector:"SECOS", vidaUtil:90, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.0, unBatera:9, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"6672", desc:"F. SECA FINCETA P. GRUESO ARIZONA", pasta:"PSE400", familia:"FINCETAS", subfamilia:"F. SECA ARIZONA CORT", sector:"SECOS", vidaUtil:90, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.2, unBatera:8, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"6673", desc:"F. SECA BAG. SALAMIN ARIZONA", pasta:"PSE400", familia:"SALAMINES", subfamilia:"F. SECA ARIZONA CORT", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.8, unBatera:15, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"6674", desc:"F. SECA FINCETA P. FINO ARIZONA MITADES", pasta:"PSE400", familia:"FINCETAS", subfamilia:"F. SECA ARIZONA CORT", sector:"SECOS", vidaUtil:120, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.5, unBatera:12, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6065", desc:"F. SECA MILAN ARIZONA MITADES", pasta:"PSE400", familia:"MILANES", subfamilia:"F. SECA ARIZONA MILA", sector:"SECOS", vidaUtil:120, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.95, unBatera:12, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6066", desc:"F. SECA MILAN ARIZONA", pasta:"PSE400", familia:"MILANES", subfamilia:"F. SECA ARIZONA MILA", sector:"SECOS", vidaUtil:90, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.8, unBatera:5, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q843", desc:"F. SECA MILAN ARIZONA FETAS (1 KG.)", pasta:"PSE400", familia:"MILANES", subfamilia:"F. SECA ARIZONA MILA", sector:"SECOS", vidaUtil:120, tme:0, leadTime:1, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.0, unBatera:15, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"59", desc:"F. SECA MILAN CENTENARIO MITADES", pasta:"PSE200", familia:"MILANES", subfamilia:"F. SECA CEN MILAN", sector:"SECOS", vidaUtil:120, tme:68, leadTime:25, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.1, unBatera:12, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"60", desc:"F. SECA MILAN CENTENARIO", pasta:"PSE200", familia:"MILANES", subfamilia:"F. SECA CEN MILAN", sector:"SECOS", vidaUtil:90, tme:68, leadTime:25, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.55, unBatera:6, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q802", desc:"F. SECA MILAN CENTENARIO FETAS (200G.)", pasta:"PSE200", familia:"MILANES", subfamilia:"F. SECA CEN MILAN", sector:"SECOS", vidaUtil:40, tme:23, leadTime:1, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.2, unBatera:80, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"300", desc:"F. SECA FINCETA P. FINO CENTENARIO", pasta:"PSE400", familia:"FINCETAS", subfamilia:"F. SECA CENTE CORTE", sector:"SECOS", vidaUtil:90, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.0, unBatera:6, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"301", desc:"F. SECA FINCETA P. GRUESO CENTENARIO", pasta:"PSE400", familia:"FINCETAS", subfamilia:"F. SECA CENTE CORTE", sector:"SECOS", vidaUtil:120, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.5, unBatera:6, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"302", desc:"F. SECA FINCETA LONGANIZA CENTENARIO", pasta:"PSE500", familia:"FINCETAS", subfamilia:"F. SECA CENTE CORTE", sector:"SECOS", vidaUtil:90, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.2, unBatera:6, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"5064", desc:"SURTIDO FACTURA SECA CHICA 12+1", pasta:"", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:120, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:2.16, unBatera:0, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"64", desc:"F. SECA BAG. HÚNGARO CENTENARIO VACIO", pasta:"PSE300", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.18, unBatera:60, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"661", desc:"F. SECA BAG. SALAMIN CENTENARIO VACIO", pasta:"PSE450", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.18, unBatera:90, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6611", desc:"SALAMIN CENTENARIO AHUMADO AL VACIO", pasta:"PSE450", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.18, unBatera:60, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6612", desc:"F. SECA BAG. BASTÓN CENTENARIO AL VACIO SIN PIEL", pasta:"PSE300", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.45, unBatera:35, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6613", desc:"F. SECA BAG. BASTÓN HÚNGARO CENTENARIO AL VACIO SIN PIEL", pasta:"PSE300", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.45, unBatera:10, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6644", desc:"F. SECA CHACARERO CENTENARIO VACIO", pasta:"PSE450", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.2, unBatera:60, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"666", desc:"F. SECA BAG. PIPA CENTENARIO VACIO", pasta:"PSE400", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.18, unBatera:90, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"670", desc:"F. SECA BAG. LONGANIZA CENTENARIO VACIO", pasta:"PSE500", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.18, unBatera:60, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6701", desc:"LONGANIZA CENTENARIO AHUMADA AL VACIO", pasta:"PSE520", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:12, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.18, unBatera:60, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q872", desc:"F. SECA BAG. SALAMIN CENTENARIO FETAS (1 kg.)", pasta:"PSE450", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:40, tme:23, leadTime:3, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.0, unBatera:10, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q884", desc:"MIX FETEADOS HÚNGARO-SALAMÍN-LONGANIZA (200 g.)", pasta:"PSE450", familia:"SALAMINES", subfamilia:"F. SECA CENTENARIO", sector:"SECOS", vidaUtil:120, tme:23, leadTime:3, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.2, unBatera:60, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"56", desc:"F. SECA MILAN CENTE PLUS MITADES", pasta:"PSE400", familia:"MILANES", subfamilia:"F. SECA LÍNEA PLUS", sector:"SECOS", vidaUtil:120, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:1.8, unBatera:12, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"57", desc:"F. SECA MILAN CENTE PLUS", pasta:"PSE400", familia:"MILANES", subfamilia:"F. SECA LÍNEA PLUS", sector:"SECOS", vidaUtil:90, tme:68, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.7, unBatera:6, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"260", desc:"F. SECA MILAN T. Inglesa", pasta:"PSE200", familia:"MILANES", subfamilia:"F. SECA T. ING MILAN", sector:"SECOS", vidaUtil:90, tme:68, leadTime:25, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.9, unBatera:6, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"Q2802", desc:"F. SECA MILAN T. INGLESA FETAS (200G.)", pasta:"PSE200", familia:"MILANES", subfamilia:"F. SECA T. ING MILAN", sector:"SECOS", vidaUtil:40, tme:29, leadTime:1, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.2, unBatera:60, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6166", desc:"F. SECA MILAN VALLE DEL SOL", pasta:"", familia:"MILANES", subfamilia:"F. SECA VALLE DEL SOL", sector:"SECOS", vidaUtil:90, tme:59, leadTime:20, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:3.7, unBatera:1, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"91", desc:"F. SECA LOMITO SERRANO VACIO", pasta:"PSE100", familia:"BONDIOLA Y SERRANO", subfamilia:"LOMITO SERRANO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:50, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.75, unBatera:30, objDias:18, ter:7, segDias:0, permiteArrastre:false, reventa:false, vacio:false, tipoPlan:"Stock" },
+  { sku:"92", desc:"F. SECA LOMITO SERRANO MITADES VACIO", pasta:"PSE100", familia:"BONDIOLA Y SERRANO", subfamilia:"LOMITO SERRANO", sector:"SECOS", vidaUtil:90, tme:68, leadTime:50, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.75, unBatera:30, objDias:18, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"Q834", desc:"F. SECA LOMITO SERRANO EN FETAS (200G.)", pasta:"PSE100", familia:"BONDIOLA Y SERRANO", subfamilia:"LOMITO SERRANO", sector:"SECOS", vidaUtil:40, tme:68, leadTime:1, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.2, unBatera:60, objDias:8, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"61611", desc:"PICADITOS LONGANIZA S/PIEL CENTENARIO 100 GR.", pasta:"", familia:"SALAMINES", subfamilia:"PICADITOS", sector:"SECOS", vidaUtil:120, tme:68, leadTime:10, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.1, unBatera:50, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"61711", desc:"PICADITOS HÚNGARO S/PIEL CENTENARIO 100 GR.", pasta:"", familia:"SALAMINES", subfamilia:"PICADITOS", sector:"SECOS", vidaUtil:120, tme:68, leadTime:10, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.1, unBatera:50, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"61511", desc:"PICADITOS SALAME S/PIEL CENTENARIO 100 GR.", pasta:"", familia:"SALAMINES", subfamilia:"PICADITOS", sector:"SECOS", vidaUtil:120, tme:68, leadTime:10, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.1, unBatera:50, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6615", desc:"F. SECA PICADITOS SALAME S/PIEL CENTENARIO 250 gr.", pasta:"", familia:"SALAMINES", subfamilia:"PICADITOS", sector:"SECOS", vidaUtil:120, tme:68, leadTime:10, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.25, unBatera:27, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6616", desc:"F. SECA PICADITOS LONGANIZA S/PIEL CENTENARIO 250 gr.", pasta:"", familia:"SALAMINES", subfamilia:"PICADITOS", sector:"SECOS", vidaUtil:120, tme:68, leadTime:10, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.25, unBatera:27, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"6617", desc:"F. SECA PICADITOS HÚNGARO S/PIEL CENTENARIO 250 gr.", pasta:"", familia:"SALAMINES", subfamilia:"PICADITOS", sector:"SECOS", vidaUtil:120, tme:68, leadTime:10, kgBatch:93.0, kgBatchMin:93.0, pesoUnitario:0.25, unBatera:27, objDias:24, ter:7, segDias:0, permiteArrastre:true, reventa:false, vacio:true, tipoPlan:"Stock" },
+  { sku:"LACT0002", desc:"QUESO DAMBO BARRA 4 KG.", pasta:"", familia:"LACTEOS", subfamilia:"DAMBO", sector:"QUESOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:3.85, unBatera:6, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"LACT0007", desc:"QUESO DAMBO BARRA 4 KG ELAB.", pasta:"", familia:"LACTEOS", subfamilia:"DAMBO", sector:"QUESOS", vidaUtil:360, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:3.85, unBatera:24, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"LACTM002", desc:"QUESO DAMBO MUESTRA 1KG", pasta:"", familia:"LACTEOS", subfamilia:"DAMBO", sector:"QUESOS", vidaUtil:360, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:0.96, unBatera:24, objDias:72, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"QLACT002", desc:"QUESO DAMBO FETAS (1KG)", pasta:"", familia:"LACTEOS", subfamilia:"DAMBO", sector:"QUESOS", vidaUtil:20, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:1.0, unBatera:24, objDias:4, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"QLACT007", desc:"QUESO DAMBO FETAS (1KG)", pasta:"", familia:"LACTEOS", subfamilia:"DAMBO", sector:"QUESOS", vidaUtil:20, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:1.0, unBatera:24, objDias:4, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"LACT0006", desc:"QUESO MUZZARELLA BARRA 4 KG ELAB.", pasta:"", familia:"LACTEOS", subfamilia:"MUZZARELLA", sector:"QUESOS", vidaUtil:360, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:3.85, unBatera:24, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"LACT0001", desc:"QUESO MUZZARELLA BARRA 4 KG.", pasta:"", familia:"LACTEOS", subfamilia:"MUZZARELLA", sector:"QUESOS", vidaUtil:360, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:3.85, unBatera:6, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"LACT0008", desc:"QUESO MUZZARELLA VALLE DEL SOL 4KG.", pasta:"", familia:"LACTEOS", subfamilia:"MUZZARELLA", sector:"QUESOS", vidaUtil:360, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:3.85, unBatera:24, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"LACTM001", desc:"QUESO MUZZARELLA MUESTRA 1KG", pasta:"", familia:"LACTEOS", subfamilia:"MUZZARELLA", sector:"QUESOS", vidaUtil:360, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:0.96, unBatera:24, objDias:72, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"QLACT001", desc:"QUESO MUZZARELLA FETAS (1KG)", pasta:"", familia:"LACTEOS", subfamilia:"MUZZARELLA", sector:"QUESOS", vidaUtil:20, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:1.0, unBatera:24, objDias:4, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"LACT0003", desc:"QUESO PROVOLONE EN BARRA 4 KG.", pasta:"", familia:"LACTEOS", subfamilia:"PROVOLONE", sector:"QUESOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:3.85, unBatera:6, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"883", desc:"QUESO PARRILLERO PROVOLONE", pasta:"", familia:"LACTEOS", subfamilia:"PROVOLONE", sector:"QUESOS", vidaUtil:180, tme:95, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:0.3, unBatera:108, objDias:36, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"LACT0005", desc:"QUESO SANDWICH BARRA 4 KG.", pasta:"", familia:"LACTEOS", subfamilia:"SANDWICH", sector:"QUESOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:3.85, unBatera:6, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"HAM0002", desc:"HAMBURGUESA EXTRA CENTENARIO CAJ X84", pasta:"", familia:"HAMBURGUESAS", subfamilia:"HAMBURGUESAS CENTENARIO", sector:"HAMBURGUESAS", vidaUtil:270, tme:0, leadTime:20, kgBatch:500, kgBatchMin:500, pesoUnitario:7.01, unBatera:2, objDias:54, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"HAM0004", desc:"HAMBURGUESA EXTRA CENTENARIO CAJ X84", pasta:"", familia:"HAMBURGUESAS", subfamilia:"HAMBURGUESAS CENTENARIO", sector:"HAMBURGUESAS", vidaUtil:360, tme:0, leadTime:20, kgBatch:500, kgBatchMin:500, pesoUnitario:7.01, unBatera:2, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"HAM0006", desc:"HAMBURGUESA CENTENARIO PACK X21", pasta:"", familia:"HAMBURGUESAS", subfamilia:"HAMBURGUESAS CENTENARIO", sector:"HAMBURGUESAS", vidaUtil:270, tme:0, leadTime:5, kgBatch:500, kgBatchMin:500, pesoUnitario:3.51, unBatera:4, objDias:54, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0007", desc:"MILANESA SABOR POLLO DE LA PLANTA 230G", pasta:"", familia:"VEGANOS", subfamilia:"CARNES VEGETALES", sector:"VEGANOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:0.23, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0008", desc:"HAMBURGUESA SABOR CARNE DE LA PLANTA 230G", pasta:"", familia:"VEGANOS", subfamilia:"CARNES VEGETALES", sector:"VEGANOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:0.23, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0009", desc:"TIRAS SABOR CARNE DE LA PLANTA 230G", pasta:"", familia:"VEGANOS", subfamilia:"CARNES VEGETALES", sector:"VEGANOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:0.23, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0010", desc:"TIRAS SABOR POLLO DE LA PLANTA 230G", pasta:"", familia:"VEGANOS", subfamilia:"CARNES VEGETALES", sector:"VEGANOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:0.23, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0001", desc:"HUMMUS CLÁSICO DE LA PLANTA 175G", pasta:"", familia:"VEGANOS", subfamilia:"HUMMUS", sector:"VEGANOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:0.17, unBatera:60, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0002", desc:"HUMMUS AJO Y LIMÓN DE LA PLANTA 175G", pasta:"", familia:"VEGANOS", subfamilia:"HUMMUS", sector:"VEGANOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:0.17, unBatera:60, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0003", desc:"HUMMUS AHUMADO C/PIMENTÓN 175G", pasta:"", familia:"VEGANOS", subfamilia:"HUMMUS", sector:"VEGANOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:0.17, unBatera:60, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0004", desc:"HUMMUS MIX SURTIDO SABORES 175G", pasta:"", familia:"VEGANOS", subfamilia:"HUMMUS", sector:"VEGANOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:0.17, unBatera:60, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0011", desc:"HUMMUS DE LA PLANTA PACK X3 525G", pasta:"", familia:"VEGANOS", subfamilia:"HUMMUS", sector:"VEGANOS", vidaUtil:180, tme:0, leadTime:15, kgBatch:500, kgBatchMin:500, pesoUnitario:0.52, unBatera:20, objDias:36, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0005", desc:"DULCE DE LECHE 220G  x 6un.", pasta:"", familia:"VEGANOS", subfamilia:"LÁCTEOS VEG", sector:"VEGANOS", vidaUtil:90, tme:0, leadTime:7, kgBatch:500, kgBatchMin:500, pesoUnitario:0.22, unBatera:60, objDias:18, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"VEG0006", desc:"QUESO UNTABLE 230G x 6un.", pasta:"", familia:"VEGANOS", subfamilia:"LÁCTEOS VEG", sector:"VEGANOS", vidaUtil:90, tme:0, leadTime:10, kgBatch:500, kgBatchMin:500, pesoUnitario:0.23, unBatera:60, objDias:18, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"SLS0007", desc:"CHIMICHURRI CLÁSICO 160G PACK X6", pasta:"", familia:"ADEREZOS", subfamilia:"CHIMICHURRI", sector:"ADEREZOS", vidaUtil:120, tme:0, leadTime:7, kgBatch:500, kgBatchMin:500, pesoUnitario:0.96, unBatera:10, objDias:24, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"SLS0009", desc:"CHIMICHURRI PICANTE 160G PACK X6", pasta:"", familia:"ADEREZOS", subfamilia:"CHIMICHURRI", sector:"ADEREZOS", vidaUtil:120, tme:0, leadTime:7, kgBatch:500, kgBatchMin:500, pesoUnitario:0.96, unBatera:10, objDias:24, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"SLS0010", desc:"CHIMICHURRI MIX CLÁSICO Y PICANTE 160G", pasta:"", familia:"ADEREZOS", subfamilia:"CHIMICHURRI", sector:"ADEREZOS", vidaUtil:120, tme:0, leadTime:7, kgBatch:500, kgBatchMin:500, pesoUnitario:0.96, unBatera:10, objDias:24, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"SLS0001", desc:"SALSA BARBACOA TIPO AMERICANA 350 GR", pasta:"", familia:"ADEREZOS", subfamilia:"SALSAS", sector:"ADEREZOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:0.36, unBatera:12, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"SLS0003", desc:"SALSA PICANTE SUAVE 360 G", pasta:"", familia:"ADEREZOS", subfamilia:"SALSAS", sector:"ADEREZOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:0.36, unBatera:12, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"SLS0005", desc:"SALSAS MIX SURTIDO SABORES PACK X6", pasta:"", familia:"ADEREZOS", subfamilia:"SALSAS", sector:"ADEREZOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:2.16, unBatera:12, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"SLS0004", desc:"SALSAS MIX SURTIDO SABORES PACK X12", pasta:"", familia:"ADEREZOS", subfamilia:"SALSAS", sector:"ADEREZOS", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:4.32, unBatera:12, objDias:72, ter:15, segDias:7, permiteArrastre:false, reventa:true, vacio:false, tipoPlan:"Stock" },
+  { sku:"JC001", desc:"JAMÓN CRUDO SERRANO - PATA DESHUESADA", pasta:"", familia:"JAMÓN CRUDO", subfamilia:"PIEZAS", sector:"JAMÓN CRUDO", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:5.0, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"JC002", desc:"JAMÓN CRUDO SERRANO - PATA DESHUESADA MITAD", pasta:"", familia:"JAMÓN CRUDO", subfamilia:"PIEZAS", sector:"JAMÓN CRUDO", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:2.4, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"JC003", desc:"JAMÓN CRUDO SERRANO - BLOQUE PRENSADO", pasta:"", familia:"JAMÓN CRUDO", subfamilia:"PIEZAS", sector:"JAMÓN CRUDO", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:5.0, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"JC004", desc:"JAMÓN CRUDO SERRANO - BLOQUE PRENSADO MITAD", pasta:"", familia:"JAMÓN CRUDO", subfamilia:"PIEZAS", sector:"JAMÓN CRUDO", vidaUtil:360, tme:0, leadTime:90, kgBatch:500, kgBatchMin:500, pesoUnitario:2.2, unBatera:0, objDias:72, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"QJC003", desc:"JAMÓN CRUDO SERRANO x 100GR - PACK x 5un", pasta:"", familia:"JAMÓN CRUDO", subfamilia:"FETEADO", sector:"JAMÓN CRUDO", vidaUtil:120, tme:60, leadTime:7, kgBatch:500, kgBatchMin:500, pesoUnitario:0.5, unBatera:0, objDias:24, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" },
+  { sku:"QJC0031", desc:"Jamon Crudo Serrano En Fetas (1KG.)", pasta:"", familia:"JAMÓN CRUDO", subfamilia:"FETEADO", sector:"JAMÓN CRUDO", vidaUtil:120, tme:0, leadTime:7, kgBatch:500, kgBatchMin:500, pesoUnitario:1.0, unBatera:0, objDias:24, ter:15, segDias:7, permiteArrastre:true, reventa:true, vacio:true, tipoPlan:"Stock" }
+];
 
 // Quitar duplicados por sku
 const MAESTRO_UNICO = MAESTRO_INI.filter((a,i,arr)=>arr.findIndex(b=>b.sku===a.sku)===i);
@@ -73,8 +331,8 @@ const PEDIDOS_PEND_INI = {};
 // ─── UI ATOMS ────────────────────────────────────────────────────────────────
 const COL_W = 58; // ancho uniforme de columnas de datos en px
 
-const Th = ({children,right,center,style:s})=>(
-  <th style={{padding:"5px 6px",textAlign:"center",
+const Th = ({children,right,center,style:s,onClick})=>(
+  <th onClick={onClick} style={{padding:"5px 6px",textAlign:"center",
     color:C.muted,fontWeight:600,fontSize:10,letterSpacing:"0.05em",
     textTransform:"uppercase",whiteSpace:"nowrap",width:COL_W,minWidth:COL_W,
     borderBottom:`1px solid ${C.hairline}`,background:"#f8fafc",
@@ -152,41 +410,55 @@ const _SectionBar = ({children,right})=>(
 );
 
 // ─── KPI PANEL — 3 grupos ────────────────────────────────────────────────────
-function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total,alertasS,alertasS2}) {
+function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total,alertasS,alertasS2,totStkActual,totStkCierreS,totStkCierreS2}) {
   const fmt = n => Math.round(n).toLocaleString("es-UY");
   const pctAcum = totFcst>0?Math.round(totAcum/totFcst*100):0;
   const pctProdAcum = totProdS>0?Math.round(totProdAcum/totProdS*100):0;
 
-  const grupo = (titulo,color,children) => (
+  const grupo = (titulo,color,children,minW=180) => (
     <div style={{background:C.surface,border:`1px solid ${C.hairline}`,borderRadius:10,
-      padding:"14px 18px",flex:1,minWidth:220,borderTop:`3px solid ${color}`}}>
+      padding:"12px 16px",flex:1,minWidth:minW,borderTop:`3px solid ${color}`}}>
       <div style={{fontSize:10,fontWeight:700,color,letterSpacing:"0.08em",
-        textTransform:"uppercase",marginBottom:12}}>{titulo}</div>
+        textTransform:"uppercase",marginBottom:10}}>{titulo}</div>
       {children}
     </div>
   );
 
   const fila = (label,value,hint,bold) => (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",
-      marginBottom:6}}>
-      <span style={{fontSize:11,color:C.textDim}}>{label}</span>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+      <span style={{fontSize:10,color:C.textDim}}>{label}</span>
       <div style={{textAlign:"right"}}>
-        <span style={{fontSize:bold?16:13,fontWeight:bold?700:500,color:C.text}}>{value}</span>
-        {hint&&<div style={{fontSize:10,color:C.muted}}>{hint}</div>}
+        <span style={{fontSize:bold?15:12,fontWeight:bold?700:500,color:C.text}}>{value}</span>
+        {hint&&<div style={{fontSize:9,color:C.muted}}>{hint}</div>}
       </div>
     </div>
   );
 
-  // Barra de progreso
   const barra = (pct,color) => (
-    <div style={{height:4,background:C.faint,borderRadius:2,marginBottom:10,overflow:"hidden"}}>
-      <div style={{width:`${Math.min(100,pct)}%`,height:"100%",
-        background:pct>100?"#dc2626":color,borderRadius:2,transition:"width 0.3s"}}/>
+    <div style={{height:3,background:C.faint,borderRadius:2,marginBottom:8,overflow:"hidden"}}>
+      <div style={{width:`${Math.min(100,pct)}%`,height:"100%",background:pct>100?"#dc2626":color,borderRadius:2}}/>
+    </div>
+  );
+
+  const chips = (alertas) => (
+    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+      {Object.entries(POLITICA_DEFAULT).map(([k,v])=>{
+        const cnt=alertas[k]||0;
+        return cnt>0?<span key={k} style={{background:v.bg,color:v.color,border:`1px solid ${v.border}`,padding:"1px 7px",borderRadius:10,fontSize:10,fontWeight:600}}>{cnt} {v.label}</span>:null;
+      })}
+      {Object.values(alertas).every(v=>!v)&&<span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>✓ Sin alertas</span>}
     </div>
   );
 
   return (
-    <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>
+    <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}}>
+      {/* STOCK */}
+      {grupo("Stock","#0f766e",<>
+        {fila("Stock actual",`${fmt(totStkActual)} kg`,null,true)}
+        {fila("Cierre S",`${fmt(totStkCierreS)} kg`)}
+        {fila("Cierre S+1",`${fmt(totStkCierreS2)} kg`)}
+      </>)}
+
       {/* VENTA */}
       {grupo("Venta","#2563eb",<>
         {fila("Fcst S",`${fmt(totFcst)} kg`,null,true)}
@@ -195,53 +467,25 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
         {fila("Fcst S+1",`${fmt(fcstS2Total)} kg`)}
       </>)}
 
-      {/* PRODUCCIÓN */}
-      {grupo("Producción","#7c3aed",<>
+      {/* PEDIDO */}
+      {grupo("Pedido","#7c3aed",<>
         {fila("Plan S",`${fmt(totProdS)} kg`,null,true)}
         {barra(pctProdAcum,"#7c3aed")}
-        {fila("Prod. acum. S",`${fmt(totProdAcum)} kg`,`${pctProdAcum}% del plan`)}
-        {fila("Prod. óptima S+1",`${fmt(totProdOptS2)} kg`)}
+        {fila("Ped. acum. S",`${fmt(totProdAcum)} kg`,`${pctProdAcum}% del plan`)}
+        {fila("Pedido sugerido S+1",`${fmt(totProdOptS2)} kg`)}
       </>)}
 
-      {/* STOCK / ALERTAS */}
+      {/* ALERTAS DE STOCK */}
       {grupo("Alertas de stock","#dc2626",<>
         <div style={{marginBottom:8}}>
-          <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Semana S</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {Object.entries(POLITICA_DEFAULT).map(([k,v])=>{
-              const cnt = alertasS[k]||0;
-              return cnt>0?(
-                <span key={k} style={{background:v.bg,color:v.color,
-                  border:`1px solid ${v.border}`,padding:"2px 8px",
-                  borderRadius:10,fontSize:10,fontWeight:600}}>
-                  {cnt} {v.label}
-                </span>
-              ):null;
-            })}
-            {Object.values(alertasS).every(v=>!v)&&(
-              <span style={{color:C.ok.color,fontSize:11,fontWeight:600}}>✓ Sin alertas</span>
-            )}
-          </div>
+          <div style={{fontSize:9,color:C.muted,marginBottom:4}}>Semana S</div>
+          {chips(alertasS)}
         </div>
         <div>
-          <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Semana S+1</div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-            {Object.entries(POLITICA_DEFAULT).map(([k,v])=>{
-              const cnt = alertasS2[k]||0;
-              return cnt>0?(
-                <span key={k} style={{background:v.bg,color:v.color,
-                  border:`1px solid ${v.border}`,padding:"2px 8px",
-                  borderRadius:10,fontSize:10,fontWeight:600}}>
-                  {cnt} {v.label}
-                </span>
-              ):null;
-            })}
-            {Object.values(alertasS2).every(v=>!v)&&(
-              <span style={{color:C.ok.color,fontSize:11,fontWeight:600}}>✓ Sin alertas</span>
-            )}
-          </div>
+          <div style={{fontSize:9,color:C.muted,marginBottom:4}}>Semana S+1</div>
+          {chips(alertasS2)}
         </div>
-      </>)}
+      </>,220)}
     </div>
   );
 }
@@ -255,11 +499,19 @@ function calcDias(kgStock, kgVentaSemanal) {
 function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPend,
   prodAcum, prodPend, prodS2, conArrastre, usarPromedio}) {
 
-  const vu      = art.vidaUtil;
-  const pctObj  = (art.pctVUObj != null && art.pctVUObj > 0) ? art.pctVUObj : 0.20;
-  const diasObj = vu * pctObj;
-  const tme     = art.tme || 0;
-  // Alerta: el stock objetivo supera el TME (queda menos VU de la que exige el cliente)
+  const vu       = art.vidaUtil;
+  const tme      = art.tme || 0;
+  const leadTime = art.leadTime || 3;
+  const ss       = art.segDias || 0;
+  const ter      = art.ter || (art.reventa ? 15 : 7);
+
+  // Umbrales en días
+  const diasMin  = leadTime + ss;              // punto de pedido = leadtime + SS
+  const diasObj  = ter + ss;                   // stock objetivo = TER + SS
+  const diasMax  = tme > 0 ? tme - ss : null; // stock máximo = TME - SS (límite duro)
+  const pctObj   = vu > 0 ? diasObj / vu : 0.20;
+
+  // Alerta: stock objetivo supera TME → parámetros mal configurados
   const alertaTME = tme > 0 && diasObj > tme;
 
   // ── STOCK ACTUAL ──
@@ -274,7 +526,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const fcstPend  = fcst - factAcum - pedidos;
   const ventaTotalS = factAcum + pedidos + Math.max(0, fcstPend);
 
-  // ── PRODUCCIÓN S ──
+  // ── PEDIDO S ──
   const pAcum = prodAcum[art.sku] || 0;
   // Prod. pendiente S: viene del CSV cargado en pestaña Producción, sino es 0
   const pPend = prodPend[art.sku] || 0;
@@ -294,14 +546,37 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const diasS    = calcDias(Math.max(0, stkCierreS), fcstS2v);
   const estadoS  = getEstado(diasS, vu, fcstS2v);
 
-  // ── PRODUCCIÓN S+1 ──
-  const fcstS3v = fcstS3[art.sku] || 0;
-  // Stock objetivo: usa promedio de S, S+1, S+2 o solo S+2 según toggle
-  const fcstRef  = usarPromedio
-    ? ((fcst || 0) + (fcstS2v || 0) + (fcstS3v || 0)) / 3
-    : fcstS3v;
-  const stkObjS2  = (fcstRef / 7) * diasObj;
-  const prodOptS2 = Math.max(0, fcstS2v + stkObjS2 - Math.max(0, stkCierreS));
+  // ── PEDIDO SUGERIDO S+1 ──
+  const fcstS3v   = fcstS3[art.sku] || 0;
+  const demDiaria = fcstS2v / 7;
+
+  // Umbrales en kg
+  const stkMinKg = demDiaria * diasMin;
+  const stkObjKg = demDiaria * diasObj;
+  const stkMaxKg = diasMax != null ? demDiaria * diasMax : null;
+
+  // Stock disponible al inicio de S+1 = stock cierre S
+  const stkCierreSPos = Math.max(0, stkCierreS);
+
+  // Pedido sugerido = stock objetivo - stock disponible, redondeado al batch mínimo
+  // Limitado por stock máximo (TME - SS)
+  const kgBatchMin = art.kgBatchMin || 500;
+  const necesidad = Math.max(0, fcstS2v + stkObjKg - stkCierreSPos);
+  let prodOptS2 = 0;
+  if (necesidad > 0 && kgBatchMin > 0) {
+    // Siempre redondear hacia arriba para no quedar en déficit
+    const batches = necesidad / kgBatchMin;
+    prodOptS2 = Math.ceil(batches) * kgBatchMin;
+    // Recortar al stock máximo si se supera
+    if (stkMaxKg != null && (stkCierreSPos + prodOptS2) > stkMaxKg) {
+      const batchesMax = Math.floor((stkMaxKg - stkCierreSPos) / kgBatchMin);
+      prodOptS2 = Math.max(0, batchesMax) * kgBatchMin;
+    }
+  }
+
+  // Alerta batch: si stkDisponible + batch mínimo supera el stock máximo (TME - SS)
+  const alertaMax = stkMaxKg != null && (stkCierreSPos + kgBatchMin) > stkMaxKg;
+
   const prodS2val = (prodS2[art.sku] !== undefined && prodS2[art.sku] !== null)
     ? (prodS2[art.sku] || 0)
     : prodOptS2;
@@ -321,7 +596,8 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
     fcstS2v, arrastre,
     prodOptS2, prodS2val,
     stkCierreS2, diasS2, estadoS2,
-    diasObj, tme, alertaTME,
+    diasMin, diasObj, diasMax, stkMinKg, stkObjKg, stkMaxKg,
+    tme, alertaTME, alertaMax, pctObj, demDiaria,
   };
 }
 
@@ -358,7 +634,7 @@ function descargarCSV(nombre, contenido) {
   }
 }
 
-function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga, plantillaNombre, plantillaContenido, children }) {
+function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga, plantillaNombre, plantillaContenido, maestro=[], children }) {
   const [msg, setMsg]         = useState(null);
   const [noEncontrados, setNoEncontrados] = useState([]);
   const [verDetalle, setVerDetalle]       = useState(false);
@@ -438,13 +714,12 @@ function CargaCSV({ titulo, descripcion, color="#2563eb", onCargar, ultimaCarga,
           border:"1px solid #fde68a",borderRadius:7}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
             <div style={{fontSize:11,fontWeight:700,color:"#92400e"}}>
-              SKUs no encontrados en el maestro — no se cargaron
+              {noEncontrados.length} SKUs no encontrados en el maestro — no se cargaron
             </div>
-            <button onClick={()=>descargarCSV("skus_no_encontrados.csv",
-              "SKU\n"+noEncontrados.join("\n"))}
+            <button onClick={()=>descargarCSV("skus_no_encontrados.csv","SKU\n"+noEncontrados.join("\n"))}
               style={{background:"#fef3c7",border:"1px solid #fde68a",color:"#92400e",
                 padding:"3px 10px",borderRadius:4,cursor:"pointer",fontSize:10,fontWeight:600}}>
-              ↓ Descargar lista
+              ↓ Descargar CSV
             </button>
           </div>
           <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
@@ -788,7 +1063,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
 
   return (
     <div>
-      <CargaCSV titulo="Plan de producción"
+      <CargaCSV titulo="Planificación de abastecimiento"
         descripcion="CSV con 3 columnas: SKU · Prod pendiente S · Prod S+1. Separador: punto y coma."
         color={C.gProd} onCargar={cargarProd} ultimaCarga={ultimaCarga}
         plantillaNombre="produccion.csv" plantillaContenido={plantillaContenidoProd}/>
@@ -797,7 +1072,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
       <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
         {/* Prod acum */}
         <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"14px 18px",flex:1,minWidth:140}}>
-          <div style={{fontSize:10,color:C.muted,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Prod. acum. S</div>
+          <div style={{fontSize:10,color:C.muted,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Ped. acum. S</div>
           <div style={{fontSize:20,fontWeight:700,color:C.text}}>{fmt(totAcum)} <span style={{fontSize:11,color:C.muted,fontWeight:400}}>kg</span></div>
           <BarraAvance pct={pctAcumTotal} color={pctAcumTotal>=60?"#15803d":pctAcumTotal>=30?"#d97706":"#b91c1c"}/>
           <div style={{fontSize:10,color:C.muted,marginTop:2}}>del total producido S</div>
@@ -838,7 +1113,7 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
           <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
             <thead><tr>
               <Th>Sector</Th>
-              <Th right>Prod. acum.</Th><Th right>Prod. pend.</Th>
+              <Th right>Ped. acum.</Th><Th right>Ped. pend.</Th>
               <Th right>Total S</Th><Th right>Acum/Total</Th>
               <Th right>Fcst S</Th><Th right>Total/Fcst</Th>
               <Th right>Plan S+1</Th>
@@ -887,8 +1162,8 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
         <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
           <thead><tr>
             <Th>SKU</Th><Th>Descripción</Th><Th>Sector</Th>
-            <Th right>Prod. acum.</Th>
-            <Th right>Prod. pend.</Th>
+            <Th right>Ped. acum.</Th>
+            <Th right>Ped. pend.</Th>
             <Th right>Total S</Th><Th right>Acum/Total</Th>
             <Th right>Plan S+1</Th>
           </tr></thead>
@@ -924,16 +1199,74 @@ function PanelProd({ maestro, prodAcum, setProdAcum, prodPend, setProdPend, prod
 }
 
 // ─── MÓDULO PRINCIPAL ────────────────────────────────────────────────────────
+function FiltroDropdown({ label, opciones, filtro, setter }) {
+  const [abierto, setAbierto] = useState(false);
+  const activos = filtro.size;
+  return (
+    <div style={{position:"relative",flexShrink:0}}>
+      {abierto&&<div onClick={()=>setAbierto(false)} style={{position:"fixed",inset:0,zIndex:99}}/>}
+      <button onClick={()=>setAbierto(v=>!v)}
+        style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",
+          background:activos>0?C.accentDim:C.surface,
+          border:`1px solid ${activos>0?C.accent:C.border}`,
+          color:activos>0?C.accent:C.textDim,
+          borderRadius:6,cursor:"pointer",fontSize:12,whiteSpace:"nowrap"}}>
+        {label}{activos>0?` (${activos})`:""} {abierto?"▲":"▼"}
+      </button>
+      {abierto&&(
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,zIndex:200,
+          background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,
+          boxShadow:"0 4px 16px rgba(0,0,0,0.12)",minWidth:180,padding:"6px 0"}}>
+          {activos>0&&(
+            <div onClick={()=>{setter(new Set());}}
+              style={{padding:"6px 14px",fontSize:11,color:C.accent,cursor:"pointer",
+                borderBottom:`1px solid ${C.hairline}`,marginBottom:4}}>
+              ✕ Limpiar selección
+            </div>
+          )}
+          {opciones.map(({val,label:lbl,color,bg,border})=>{
+            const activo = filtro.has(val);
+            const col = color||C.text;
+            return (
+              <div key={val} onClick={()=>{
+                setter(prev=>{const n=new Set(prev);n.has(val)?n.delete(val):n.add(val);return n;});
+              }} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",
+                cursor:"pointer",background:activo?(bg||col+"11"):"transparent",
+                transition:"background 0.1s"}}>
+                <div style={{width:14,height:14,borderRadius:3,flexShrink:0,
+                  border:`2px solid ${activo?col:C.border}`,
+                  background:activo?col:"transparent",
+                  display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {activo&&<span style={{color:"#fff",fontSize:9,fontWeight:700}}>✓</span>}
+                </div>
+                <span style={{fontSize:12,color:activo?col:C.text}}>{lbl||val}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcstS3,
   stockActual, setStockActual, ventaAcum, setVentaAcum,
   pedidosPend, setPedidosPend, prodAcum, setProdAcum,
   prodPend, setProdPend, prodS2, setProdS2 }) {
 
-  const [filtroSector, setFiltroSector]   = useState("Todos");
-  const [filtroEstado, setFiltroEstado]   = useState("Todos");
-  const [filtroReventa, setFiltroReventa] = useState("Todos");
-  const [filtroVacio, setFiltroVacio]     = useState("Todos");
-  const [filtroTipoPlan, setFiltroTipoPlan] = useState("Todos");
+  const [filtroSector,   setFiltroSector]   = useState(new Set());
+  const [filtroEstado,   setFiltroEstado]   = useState(new Set());
+  const [filtroReventa,  setFiltroReventa]  = useState(new Set());
+  const [filtroVacio,    setFiltroVacio]    = useState(new Set());
+  const [filtroTipoPlan, setFiltroTipoPlan] = useState(new Set());
+
+  function toggleFiltro(setter, valor) {
+    setter(prev => {
+      const next = new Set(prev);
+      next.has(valor) ? next.delete(valor) : next.add(valor);
+      return next;
+    });
+  }
   const [buscar, setBuscar]             = useState("");
   const [orden, setOrden]               = useState({ col:"desc", dir:"asc" });
   const [mostrarS2, setMostrarS2]       = useState(true);
@@ -947,29 +1280,31 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
   const rows = maestro.map(art=>({ art, ...calcRow(art, ctx) }));
 
   const rowsFilt = rows.filter(r=>{
-    const sOk = filtroSector==="Todos"||r.art.sector===filtroSector;
-    const eOk = filtroEstado==="Todos" || r.estadoActual===filtroEstado;
-    const rOk = filtroReventa==="Todos" || (filtroReventa==="Reventa"?r.art.reventa:!r.art.reventa);
-    const vOk = filtroVacio==="Todos"   || (filtroVacio==="Si"?r.art.vacio:!r.art.vacio);
-    const tOk = filtroTipoPlan==="Todos" || (r.art.tipoPlan||"Stock")===filtroTipoPlan;
+    const sOk = filtroSector.size===0   || filtroSector.has(r.art.sector);
+    const eOk = filtroEstado.size===0   || filtroEstado.has(r.estadoActual);
+    const tOk = filtroTipoPlan.size===0 || filtroTipoPlan.has(r.art.tipoPlan||"Stock");
+    const rOk = filtroReventa.size===0  || filtroReventa.has(r.art.reventa?"Reventa":"Propio");
+    const vOk = filtroVacio.size===0    || filtroVacio.has(r.art.vacio?"Si":"No");
     const bOk = !buscar.trim() ||
       r.art.sku.toLowerCase().includes(buscar.toLowerCase()) ||
       r.art.desc.toLowerCase().includes(buscar.toLowerCase());
     return sOk&&eOk&&rOk&&vOk&&tOk&&bOk;
   }).sort((a,b)=>{
     const d = orden.dir==="asc" ? 1 : -1;
-    if (orden.col==="sku")  return d * String(a.art.sku).localeCompare(String(b.art.sku), undefined, {numeric:true});
-    if (orden.col==="desc") return d * a.art.desc.localeCompare(b.art.desc);
-    if (orden.col==="dias") {
-      const da = isNaN(a.diasActual)||a.diasActual===999 ? 9999 : Number(a.diasActual);
-      const db = isNaN(b.diasActual)||b.diasActual===999 ? 9999 : Number(b.diasActual);
-      return d * (da - db);
-    }
+    if (orden.col==="sku")      return d * String(a.art.sku).localeCompare(String(b.art.sku), undefined, {numeric:true});
+    if (orden.col==="desc")     return d * a.art.desc.localeCompare(b.art.desc);
+    if (orden.col==="stkActual")return d * (a.stkActual - b.stkActual);
+    if (orden.col==="diasAct")  return d * ((isNaN(a.diasActual)||a.diasActual===999?9999:a.diasActual) - (isNaN(b.diasActual)||b.diasActual===999?9999:b.diasActual));
+    if (orden.col==="fcst")     return d * ((a.fcst||0) - (b.fcst||0));
+    if (orden.col==="fcstPend") return d * (a.fcstPend - b.fcstPend);
+    if (orden.col==="stkCierreS")return d * (a.stkCierreS - b.stkCierreS);
+    if (orden.col==="diasS")    return d * ((isNaN(a.diasS)||a.diasS===999?9999:a.diasS) - (isNaN(b.diasS)||b.diasS===999?9999:b.diasS));
+    if (orden.col==="prodS2val")return d * (a.prodS2val - b.prodS2val);
+    if (orden.col==="stkCierreS2")return d * (a.stkCierreS2 - b.stkCierreS2);
+    if (orden.col==="diasS2")   return d * ((isNaN(a.diasS2)||a.diasS2===999?9999:a.diasS2) - (isNaN(b.diasS2)||b.diasS2===999?9999:b.diasS2));
     if (orden.col==="estado") {
       const ord = ["faltante","substockAlerta","sinForecast","ok","sobrestockAlerta","sobrestockRiesgo"];
-      const ia = ord.indexOf(a.estadoActual); 
-      const ib = ord.indexOf(b.estadoActual);
-      return d * ((ia===-1?3:ia) - (ib===-1?3:ib));
+      return d * ((ord.indexOf(a.estadoActual)===-1?3:ord.indexOf(a.estadoActual)) - (ord.indexOf(b.estadoActual)===-1?3:ord.indexOf(b.estadoActual)));
     }
     return 0;
   });
@@ -983,17 +1318,20 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
   const fmt = n => Math.round(n).toLocaleString("es-UY");
 
   // Totales para KpiPanel
-  const totFcst      = rows.reduce((a,r)=>a+r.fcst,0);
-  const totAcum      = rows.reduce((a,r)=>a+r.factAcum,0);
-  const totProdS     = rows.reduce((a,r)=>a+r.prodTotalS,0);
-  const totProdAcum  = rows.reduce((a,r)=>a+r.pAcum,0);
-  const totProdOptS2 = rows.reduce((a,r)=>a+r.prodOptS2,0);
-  const fcstS2Total  = rows.reduce((a,r)=>a+r.fcstS2v,0);
+  const totFcst        = rowsFilt.reduce((a,r)=>a+r.fcst,0);
+  const totAcum        = rowsFilt.reduce((a,r)=>a+r.factAcum,0);
+  const totProdS       = rowsFilt.reduce((a,r)=>a+r.prodTotalS,0);
+  const totProdAcum    = rowsFilt.reduce((a,r)=>a+r.pAcum,0);
+  const totProdOptS2   = rowsFilt.reduce((a,r)=>a+r.prodOptS2,0);
+  const fcstS2Total    = rowsFilt.reduce((a,r)=>a+r.fcstS2v,0);
+  const totStkActual   = rowsFilt.reduce((a,r)=>a+r.stkActual,0);
+  const totStkCierreS  = rowsFilt.reduce((a,r)=>a+Math.max(0,r.stkCierreS),0);
+  const totStkCierreS2 = rowsFilt.reduce((a,r)=>a+Math.max(0,r.stkCierreS2),0);
 
-  // Conteo de alertas por estado
+  // Conteo de alertas por estado — sobre rowsFilt
   const cuentaAlertas = (campo) => {
     const c={};
-    Object.keys(POLITICA_DEFAULT).forEach(k=>{ c[k]=rows.filter(r=>r[campo]===k).length; });
+    Object.keys(POLITICA_DEFAULT).forEach(k=>{ c[k]=rowsFilt.filter(r=>r[campo]===k).length; });
     return c;
   };
   const alertasS  = cuentaAlertas("estadoS");
@@ -1021,49 +1359,26 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
     <div>
       <KpiPanel totFcst={totFcst} totAcum={totAcum} totProdS={totProdS}
         totProdAcum={totProdAcum} totProdOptS2={totProdOptS2} fcstS2Total={fcstS2Total}
-        alertasS={alertasS} alertasS2={alertasS2}/>
+        alertasS={alertasS} alertasS2={alertasS2}
+        totStkActual={totStkActual} totStkCierreS={totStkCierreS} totStkCierreS2={totStkCierreS2}/>
 
       {/* Controles */}
-      <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
         <input placeholder="Buscar por código o descripción..." value={buscar}
           onChange={e=>setBuscar(e.target.value)}
           style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,
             padding:"7px 12px",borderRadius:6,fontSize:12,outline:"none",width:220,flexShrink:0}}/>
-        <select value={filtroSector} onChange={e=>setFiltroSector(e.target.value)}
-          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
-            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
-          {sectores.map((s,i)=><option key={s} value={s}>{i===0?"Todos los sectores":s}</option>)}
-        </select>
-        <select value={filtroEstado} onChange={e=>setFiltroEstado(e.target.value)}
-          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
-            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
-          <option value="Todos">Todos los estados</option>
-          {Object.entries(POLITICA_DEFAULT).map(([k,v])=>(
-            <option key={k} value={k}>{v.label}</option>
-          ))}
-        </select>
-        <select value={filtroTipoPlan} onChange={e=>setFiltroTipoPlan(e.target.value)}
-          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
-            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
-          <option value="Todos">Todos los tipos</option>
-          <option value="Stock">Stock</option>
-          <option value="Frescos">Frescos</option>
-          <option value="Contra pedido">Contra pedido</option>
-        </select>
-        <select value={filtroReventa} onChange={e=>setFiltroReventa(e.target.value)}
-          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
-            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
-          <option value="Todos">Propio + Reventa</option>
-          <option value="Propio">Solo producción propia</option>
-          <option value="Reventa">Solo reventa</option>
-        </select>
-        <select value={filtroVacio} onChange={e=>setFiltroVacio(e.target.value)}
-          style={{background:C.surface,border:`1px solid ${C.border}`,color:C.textDim,
-            padding:"6px 12px",borderRadius:6,fontSize:12,outline:"none"}}>
-          <option value="Todos">Con y sin vacío</option>
-          <option value="Si">Solo al vacío</option>
-          <option value="No">Sin vacío</option>
-        </select>
+        {/* ── Dropdowns multi-selección ── */}
+        <FiltroDropdown label="Sector" filtro={filtroSector} setter={setFiltroSector}
+          opciones={sectores.slice(1).map(s=>({val:s, color:(SECTOR_COLOR[s]||{color:"#64748b"}).color, bg:(SECTOR_COLOR[s]||{bg:"#f8fafc"}).bg}))}/>
+        <FiltroDropdown label="Estado" filtro={filtroEstado} setter={setFiltroEstado}
+          opciones={Object.entries(POLITICA_DEFAULT).map(([k,v])=>({val:k,label:v.label,color:v.color,bg:v.bg,border:v.border}))}/>
+        <FiltroDropdown label="Tipo plan" filtro={filtroTipoPlan} setter={setFiltroTipoPlan}
+          opciones={[{val:"Stock",color:"#475569"},{val:"Frescos",color:"#15803d"},{val:"Contra pedido",color:"#92400e"}]}/>
+        <FiltroDropdown label="Origen" filtro={filtroReventa} setter={setFiltroReventa}
+          opciones={[{val:"Propio",color:"#475569"},{val:"Reventa",color:"#1d4ed8"}]}/>
+        <FiltroDropdown label="Vacío" filtro={filtroVacio} setter={setFiltroVacio}
+          opciones={[{val:"Si",label:"Al vacío",color:"#0891b2"},{val:"No",label:"Sin vacío",color:"#475569"}]}/>
         <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.textDim,cursor:"pointer"}}>
           <input type="checkbox" checked={mostrarS2} onChange={e=>setMostrarS2(e.target.checked)}/>
           Ver S+1
@@ -1074,7 +1389,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
             background:conArrastre?"#fff7ed":"transparent",
             border:`1px solid ${conArrastre?"#fed7aa":C.border}`}}>
             <input type="checkbox" checked={conArrastre} onChange={e=>setConArrastre(e.target.checked)}/>
-            Sumar demanda no atendida a S+1
+            Acumula demanda no atendida en S+1
           </label>
         )}
         {mostrarS2&&(
@@ -1130,11 +1445,11 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
               </th>
               <GrpTh label="Stock actual" cols={3} color="#475569"/>
               <GrpTh label="Venta S" cols={4} color="#2563eb" sep/>
-              <GrpTh label="Producción S" cols={2} color="#7c3aed"/>
+              <GrpTh label="Pedido S" cols={2} color="#7c3aed"/>
               <GrpTh label="Stock cierre S" cols={3} color="#0f766e"/>
               {mostrarS2&&<>
                 <GrpTh label="Venta S+1" cols={1} color="#1d4ed8" sep/>
-                <GrpTh label="Producción S+1" cols={2} color="#6d28d9"/>
+                <GrpTh label="Pedido S+1" cols={2} color="#6d28d9"/>
                 <GrpTh label="Stock cierre S+1" cols={3} color="#0d9488"/>
                 <GrpTh label="Venta S+2" cols={1} color="#1d4ed8" sep/>
               </>}
@@ -1142,19 +1457,42 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
             <tr style={{position:"sticky",top:28,zIndex:3,background:"#f8fafc",
               borderBottom:`2px solid ${C.hairline}`}}>
               {/* Stock actual */}
-              <Th right>kg</Th>
-              <Th right>Días</Th>
-              <Th>Estado</Th>
+              {[["kg","stkActual"],["Días","diasAct"],["Estado","estado"]].map(([lbl,col])=>(
+                <Th key={col} right={lbl!=="Estado"} style={{cursor:"pointer",userSelect:"none",whiteSpace:"nowrap"}}
+                  onClick={()=>toggleOrden(col)}>
+                  {lbl}{sortIcon(col)}
+                </Th>
+              ))}
               {/* Venta S */}
-              <Th right>Fcst S</Th><Th right>Fact. acum.</Th><Th right>Ped. pend.</Th><Th right>Fcst pend.</Th>
-              {/* Producción S */}
-              <Th right>Prod. acum.</Th><Th right>Prod. pend.</Th>
+              {[["Fcst S","fcst"],["Fact. acum.",null],["Ped. pend.",null],["Fcst pend.","fcstPend"]].map(([lbl,col])=>(
+                <Th key={lbl} right style={{cursor:col?"pointer":"default",userSelect:"none",whiteSpace:"nowrap"}}
+                  onClick={col?()=>toggleOrden(col):undefined}>
+                  {lbl}{col?sortIcon(col):""}
+                </Th>
+              ))}
+              {/* Pedido S */}
+              <Th right>Ped. acum.</Th><Th right>Ped. pend.</Th>
               {/* Stock cierre S */}
-              <Th right>kg</Th><Th right>Días</Th><Th>Estado</Th>
+              {[["kg","stkCierreS"],["Días","diasS"],["Estado","estadoS"]].map(([lbl,col])=>(
+                <Th key={col+"S"} right={lbl!=="Estado"} style={{cursor:"pointer",userSelect:"none",whiteSpace:"nowrap"}}
+                  onClick={()=>toggleOrden(col)}>
+                  {lbl}{sortIcon(col)}
+                </Th>
+              ))}
               {mostrarS2&&<>
                 <Th right>Fcst S+1</Th>
-                <Th right>Prod. S+1</Th><Th right>Óptima</Th>
-                <Th right>kg</Th><Th right>Días</Th><Th>Estado</Th>
+                {[["Ped. S+1","prodS2val"],["Pedido sugerido",null]].map(([lbl,col])=>(
+                  <Th key={lbl} right style={{cursor:col?"pointer":"default",userSelect:"none"}}
+                    onClick={col?()=>toggleOrden(col):undefined}>
+                    {lbl}{col?sortIcon(col):""}
+                  </Th>
+                ))}
+                {[["kg","stkCierreS2"],["Días","diasS2"],["Estado","estadoS2"]].map(([lbl,col])=>(
+                  <Th key={col+"S2"} right={lbl!=="Estado"} style={{cursor:"pointer",userSelect:"none",whiteSpace:"nowrap"}}
+                    onClick={()=>toggleOrden(col)}>
+                    {lbl}{sortIcon(col)}
+                  </Th>
+                ))}
                 <Th right>Fcst S+2</Th>
               </>}
             </tr>
@@ -1165,7 +1503,8 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
               pAcum,pPend,
               stkCierreS,diasS,estadoS,
               fcstS2v,fcstS3v,arrastre,prodOptS2,prodS2val,
-              stkCierreS2,diasS2,estadoS2,diasObj})=>{
+              stkCierreS2,diasS2,estadoS2,
+              diasMin,diasObj,diasMax,stkMinKg,stkObjKg,stkMaxKg,alertaTME,alertaMax,pctObj,demDiaria})=>{
 
               const bg = rowBg(estadoActual);
               const sep = {borderLeft:`1px solid ${C.hairline}`};
@@ -1193,7 +1532,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                       {art.desc}
                     </div>
                     <div style={{fontSize:9,color:C.muted,marginTop:1}}>
-                      VU {art.vidaUtil}d · obj {diasObj.toFixed(0)}d
+                      VU {art.vidaUtil}d · obj {diasObj}d{diasMax!=null?` · máx ${diasMax}d`:""}
                     </div>
                   </td>
 
@@ -1237,7 +1576,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                     })()}
                   </Tv>
 
-                  {/* PRODUCCIÓN S — acum solo lectura, pend editable */}
+                  {/* PEDIDO S — acum solo lectura, pend editable */}
                   <Tv right dim style={sep}><Val v={pAcum}/></Tv>
                   <Ti right>
                     <Inp value={Math.round(pPend)} width={75}
@@ -1261,13 +1600,15 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                       <Val v={fcstS2v} hint={arrastre>0?`+${fmt(arrastre)} arr.`:null}/>
                     </Tv>
 
-                    {/* Prod S+1 — editable, por defecto = óptima calculada */}
+                    {/* Prod S+1 — editable, por defecto = pedido sugerido calculado */}
                     <Ti right>
                       <Inp value={Math.round(prodS2val)} width={75}
                         onChange={v=>setProdS2(p=>({...p,[art.sku]:v}))}/>
-                      {(prodS2[art.sku]===undefined||prodS2[art.sku]===null)
+                      {alertaMax&&<div style={{fontSize:9,color:"#b91c1c",fontWeight:700,textAlign:"center",marginTop:1}}
+                        title="Batch mínimo supera stock máximo (TME)">⚠ sup. máx.</div>}
+                      {!alertaMax&&(prodS2[art.sku]===undefined||prodS2[art.sku]===null)
                         ? <div style={{fontSize:9,color:C.accent,textAlign:"center",marginTop:1}}>auto</div>
-                        : <div style={{fontSize:9,color:C.muted,textAlign:"center",marginTop:1,cursor:"pointer"}}
+                        : !alertaMax&&<div style={{fontSize:9,color:C.muted,textAlign:"center",marginTop:1,cursor:"pointer"}}
                             onClick={()=>setProdS2(p=>({...p,[art.sku]:undefined}))}>
                             ↺ reset
                           </div>}
@@ -1459,7 +1800,7 @@ function PanelSAP({ maestro, rows, politica }) {
   };
 
   function exportarGrupo(grupo, items) {
-    const header = "SKU;Descripción;Pasta;Fcst S+1 (kg);Stk cierre S (kg);Stk inicio S+1 (sem);Prod. óptima S+1 (kg);Batch ref.\n";
+    const header = "SKU;Descripción;Pasta;Fcst S+1 (kg);Stk cierre S (kg);Stk inicio S+1 (sem);Pedido sugerido S+1 (kg);Batch ref.\n";
     const body = items.map(r=>{
       const stkCierreS = Math.max(0, r.stkCierreS);
       const diasIni = r.fcstS2v > 0 ? (stkCierreS/r.fcstS2v).toFixed(2) : "";
@@ -1472,7 +1813,7 @@ function PanelSAP({ maestro, rows, politica }) {
   }
 
   function exportarTodo() {
-    const header = "Grupo;SKU;Descripción;Pasta;Fcst S+1 (kg);Stk cierre S (kg);Stk inicio S+1 (sem);Prod. óptima S+1 (kg);Batch ref.\n";
+    const header = "Grupo;SKU;Descripción;Pasta;Fcst S+1 (kg);Stk cierre S (kg);Stk inicio S+1 (sem);Pedido sugerido S+1 (kg);Batch ref.\n";
     const body = Object.entries(GRUPOS).flatMap(([grupo,filtro])=>
       rows.filter(r=>filtro(r.art)&&r.prodOptS2>0).map(r=>{
         const stkCierreS = Math.max(0, r.stkCierreS);
@@ -1532,7 +1873,7 @@ function PanelSAP({ maestro, rows, politica }) {
                   <Th>SKU</Th><Th>Descripción</Th><Th>Pasta</Th>
                   <Th right>Fcst S+1</Th><Th right>Stk cierre S</Th>
                   <Th right>Stk inicio S+1 (sem)</Th>
-                  <Th right>Prod. óptima S+1</Th><Th right>Batch ref.</Th>
+                  <Th right>Pedido sugerido S+1</Th><Th right>Batch ref.</Th>
                 </tr></thead>
                 <tbody>
                   {items.map(r=>{
@@ -1571,6 +1912,7 @@ function PanelSAP({ maestro, rows, politica }) {
                         <span style={{color:C.gProd,fontWeight:700}}>
                           {Math.round(r.prodOptS2).toLocaleString("es-UY")}
                         </span>
+                        {r.alertaMax&&<div style={{fontSize:9,color:"#b91c1c",fontWeight:700}}>⚠ sup. TME</div>}
                       </Tv>
                       <Tv right dim>{r.art.kgBatch.toLocaleString("es-UY")}</Tv>
                     </tr>
@@ -1604,21 +1946,41 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
   const [rol, setRol]         = useState("admin");
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [msgCarga, setMsgCarga] = useState(null);
+  const [ordenM, setOrdenM] = useState({col:"sku", dir:"asc"});
   const inputMaestroRef = useRef();
+
+  function toggleOrdenM(col) {
+    setOrdenM(o => o.col===col ? {col, dir:o.dir==="asc"?"desc":"asc"} : {col, dir:"asc"});
+  }
+  const sortIconM = col => ordenM.col===col ? (ordenM.dir==="asc"?" ↑":" ↓") : " ↕";
 
   const arts = maestro.filter(a=>
     a.desc.toLowerCase().includes(buscar.toLowerCase())||
     a.sku.toLowerCase().includes(buscar.toLowerCase())||
     (a.pasta||"").toLowerCase().includes(buscar.toLowerCase())
-  );
+  ).sort((a,b)=>{
+    const d = ordenM.dir==="asc" ? 1 : -1;
+    if (ordenM.col==="sku")    return d * String(a.sku).localeCompare(String(b.sku), undefined, {numeric:true});
+    if (ordenM.col==="desc")   return d * a.desc.localeCompare(b.desc);
+    if (ordenM.col==="sector") return d * (a.sector||"").localeCompare(b.sector||"");
+    if (ordenM.col==="familia")return d * (a.familia||"").localeCompare(b.familia||"");
+    if (ordenM.col==="vu")     return d * ((a.vidaUtil||0) - (b.vidaUtil||0));
+    if (ordenM.col==="tme")    return d * ((a.tme||0) - (b.tme||0));
+    if (ordenM.col==="ter")    return d * ((a.ter||7) - (b.ter||7));
+    if (ordenM.col==="seg")    return d * ((a.segDias||0) - (b.segDias||0));
+    if (ordenM.col==="lead")   return d * ((a.leadTime||0) - (b.leadTime||0));
+    if (ordenM.col==="tipo")   return d * (a.tipoPlan||"Stock").localeCompare(b.tipoPlan||"Stock");
+    return 0;
+  });
 
   // Exportar maestro actual como CSV
   function exportarMaestro() {
-    const header = "SKU;Descripcion;Pasta;Familia;Subfamilia;Sector;VidaUtil;TME;ObjPct;KgBatch;KgBatchMin;LeadTime;PesoUnitario;UnBatera;PermiteArrastre;Reventa;Vacio;TipoPlan\n";
+    const header = "SKU;Descripcion;Pasta;Familia;Subfamilia;Sector;VidaUtil;TME;TER;SegDias;KgBatch;KgBatchMin;LeadTime;PesoUnitario;UnBatera;PermiteArrastre;Reventa;Vacio;TipoPlan\n";
     const body = maestro.map(a=>
       [a.sku, a.desc, a.pasta||"", a.familia||"", a.subfamilia||"", a.sector,
        a.vidaUtil, a.tme||"",
-       a.pctVUObj ? Math.round(a.pctVUObj*100) : "",
+       a.ter||(a.reventa?15:7),
+       a.segDias||0,
        a.kgBatch, a.kgBatchMin, a.leadTime,
        a.pesoUnitario||"", a.unBatera||"",
        a.permiteArrastre===false?"No":"Si",
@@ -1656,16 +2018,17 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
               sector:        r[5]?.trim()||"",
               vidaUtil:      pn(r[6]) || 60,
               tme:           pn(r[7]) || 0,
-              pctVUObj:      r[8]?.trim() ? Math.max(1,Math.min(100,pn(r[8])))/100 : null,
-              kgBatch:       pn(r[9])  || 500,
-              kgBatchMin:    pn(r[10]) || 500,
-              leadTime:      pn(r[11]) || 3,
-              pesoUnitario:  pn(r[12]) || 0,
-              unBatera:      pn(r[13]) || 0,
-              permiteArrastre: (r[14]?.trim().toLowerCase()||"si")!=="no",
-              reventa:       (r[15]?.trim().toLowerCase()||"no")==="si",
-              vacio:         (r[16]?.trim().toLowerCase()||"no")==="si",
-              tipoPlan:      r[17]?.trim()||"Stock",
+              ter:           pn(r[8]) || 0,
+              segDias:       pn(r[9]) || 0,
+              kgBatch:       pn(r[10]) || 500,
+              kgBatchMin:    pn(r[11]) || 500,
+              leadTime:      pn(r[12]) || 3,
+              pesoUnitario:  pn(r[13]) || 0,
+              unBatera:      pn(r[14]) || 0,
+              permiteArrastre: (r[15]?.trim().toLowerCase()||"si")!=="no",
+              reventa:       (r[16]?.trim().toLowerCase()||"no")==="si",
+              vacio:         (r[17]?.trim().toLowerCase()||"no")==="si",
+              tipoPlan:      r[18]?.trim()||"Stock",
             };
             if (idxPorSku[sku] !== undefined) {
               copia[idxPorSku[sku]] = art;
@@ -1721,13 +2084,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
     setSeleccionados(new Set());
   }
 
-  const sectorColor = {
-    CHORIZOS:  { bg:"#fff7ed", color:"#c2410c" },
-    FRANKFURT: { bg:"#eff6ff", color:"#1d4ed8" },
-    PASTAS:    { bg:"#f5f3ff", color:"#6d28d9" },
-    "JAMÓN":   { bg:"#f0fdf4", color:"#15803d" },
-    SECOS:     { bg:"#f8fafc", color:"#475569" },
-  };
+
 
   // Actualizar el límite entre dos franjas: hasta de una = desde de la siguiente
   // filasOrden va de mayor a menor riesgo: sobrestockRiesgo > sobrestockAlerta > ok > substockAlerta > faltante
@@ -1885,49 +2242,44 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
             {editIdx!==null?"Editar artículo":"Nuevo artículo"}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:12}}>
-            {[["SKU","sku","text",false],["Descripción","desc","text",false],
-              ["Pasta","pasta","text",true],["Familia","familia","text",false],
-              ["Subfamilia","subfamilia","text",false],
-              ["Sector","sector","text",false],
-              ["Vida útil (días)","vidaUtil","number",true],
-              ["TME (días)","tme","number",true],
-              ["Kg/Batch","kgBatch","number",true],["Kg/Batch mín.","kgBatchMin","number",true],
-              ["Lead time (días)","leadTime","number",true],
-              ["Peso unitario (kg)","pesoUnitario","number",false],
-              ["Un/batera","unBatera","number",false],
-            ].map(([label,key,type,esAdmin])=>(
+            {/* ── Campos SAP — solo lectura ── */}
+            <div style={{gridColumn:"1/-1",fontSize:10,fontWeight:700,color:C.muted,
+              borderBottom:`1px solid ${C.hairline}`,paddingBottom:4,marginBottom:2}}>
+              Datos de SAP — solo lectura
+            </div>
+            {[["SKU","sku","text"],["Descripción","desc","text"],
+              ["Sector","sector","text"],["Pasta","pasta","text"],
+              ["Familia","familia","text"],["Subfamilia","subfamilia","text"],
+              ["Vida útil (días)","vidaUtil","number"],
+              ["TME (días)","tme","number"],
+              ["Lead time (días)","leadTime","number"],
+              ["Kg/Batch","kgBatch","number"],["Kg/Batch mín.","kgBatchMin","number"],
+              ["Peso unitario (kg)","pesoUnitario","number"],["Un/batera","unBatera","number"],
+            ].map(([label,key,type])=>(
               <label key={key} style={{display:"flex",flexDirection:"column",gap:4}}>
-                <span style={{fontSize:10,color:C.muted}}>
-                  {label}{esAdmin&&<span style={{color:C.gProd}}> 🔐</span>}
-                </span>
-                <input type={type} value={form[key]||""}
-                  disabled={esAdmin&&rol!=="admin"}
-                  onChange={e=>!(esAdmin&&rol!=="admin")&&setForm({...form,[key]:e.target.value})}
-                  style={{background:esAdmin&&rol!=="admin"?"#f9fafb":C.surface,
-                    border:`1px solid ${C.border}`,color:C.text,padding:"6px 10px",
-                    borderRadius:5,fontSize:12,outline:"none",
-                    cursor:esAdmin&&rol!=="admin"?"not-allowed":"text"}}/>
+                <span style={{fontSize:10,color:C.muted}}>{label}</span>
+                <input type={type} value={form[key]||""} disabled
+                  style={{background:"#f9fafb",border:`1px solid ${C.border}`,
+                    color:C.textDim,padding:"6px 10px",borderRadius:5,fontSize:12,
+                    outline:"none",cursor:"not-allowed"}}/>
               </label>
             ))}
-            {/* % objetivo de stock — manejo especial, se guarda como decimal */}
-            <label style={{display:"flex",flexDirection:"column",gap:4}}>
-              <span style={{fontSize:10,color:C.muted}}>
-                % obj. stock (vacío=20% global) <span style={{color:C.gProd}}>🔐</span>
-              </span>
-              <input type="number" min={1} max={100}
-                value={form.pctVUObj!=null ? Math.round(form.pctVUObj*100) : ""}
-                disabled={rol!=="admin"}
-                placeholder="20"
-                onChange={e=>{
-                  if (rol!=="admin") return;
-                  const raw = e.target.value;
-                  setForm({...form, pctVUObj: raw==="" ? null : Math.max(1,Math.min(100,+raw))/100});
-                }}
-                style={{background:rol!=="admin"?"#f9fafb":C.surface,
-                  border:`1px solid ${C.border}`,color:C.text,padding:"6px 10px",
-                  borderRadius:5,fontSize:12,outline:"none",
-                  cursor:rol!=="admin"?"not-allowed":"text"}}/>
-            </label>
+            {/* ── Parámetros de planificación — editables ── */}
+            <div style={{gridColumn:"1/-1",fontSize:10,fontWeight:700,color:C.accent,
+              borderBottom:`1px solid ${C.hairline}`,paddingBottom:4,marginBottom:2,marginTop:8}}>
+              Parámetros de planificación — configurables
+            </div>
+            {[["TER — Tiempo entre reposiciones (días)","ter","number"],
+              ["Stock de seguridad (días)","segDias","number"],
+            ].map(([label,key,type])=>(
+              <label key={key} style={{display:"flex",flexDirection:"column",gap:4}}>
+                <span style={{fontSize:10,color:C.muted}}>{label}</span>
+                <input type={type} value={form[key]??""} 
+                  onChange={e=>setForm({...form,[key]:e.target.value})}
+                  style={{background:C.surface,border:`1px solid ${C.accent}`,
+                    color:C.text,padding:"6px 10px",borderRadius:5,fontSize:12,outline:"none"}}/>
+              </label>
+            ))}
             <label style={{display:"flex",flexDirection:"column",gap:4}}>
               <span style={{fontSize:10,color:C.muted}}>Tipo de planificación</span>
               <select value={form.tipoPlan||"Stock"}
@@ -1940,7 +2292,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
               </select>
             </label>
             <label style={{display:"flex",flexDirection:"column",gap:4}}>
-              <span style={{fontSize:10,color:C.muted}}>Permite arrastre S→S+1 🔐</span>
+              <span style={{fontSize:10,color:C.muted}}>Acumula demanda 🔐</span>
               <select value={form.permiteArrastre===false?"no":"si"}
                 disabled={rol!=="admin"}
                 onChange={e=>rol==="admin"&&setForm({...form,permiteArrastre:e.target.value==="si"})}
@@ -2001,19 +2353,30 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                 style={{cursor:"pointer"}}
                 title="Seleccionar todos"/>
             </th>}
-            <Th>SKU</Th><Th>Descripción</Th><Th>Pasta</Th><Th>Sector</Th><Th>Subfamilia</Th>
-            <Th>Tipo plan</Th>
-            <Th right>VU (d) 🔐</Th><Th right>TME 🔐</Th><Th right>Obj. % 🔐</Th><Th right>Obj. días</Th>
-            <Th right>Kg/Batch 🔐</Th><Th right>Batch mín 🔐</Th>
-            <Th right>Lead 🔐</Th><Th right>Peso u.</Th><Th right>Un/bat.</Th>
-            <Th>Arrastre 🔐</Th><Th>Reventa</Th><Th>Vacío 🔐</Th><Th/>
+            {[
+              ["SKU","sku",false],["Descripción","desc",false],["Sector","sector",false],
+              ["Reventa",null,false],["Subfamilia",null,false],["Pasta",null,false],
+              ["Tipo plan","tipo",false],["Vacío",null,false],
+              ["VU (d) 🔐","vu",true],["TME (d) 🔐","tme",true],
+              ["TER (d)","ter",true],["SS (d)","seg",true],
+              ["TER+SS vs TME (%)",null,true],
+              ["Stk mín (d)",null,true],["Stk máx (d)",null,true],
+              ["Batch (kg) 🔐",null,true],["Batch mín (kg) 🔐",null,true],
+              ["Leadtime (d) 🔐","lead",true],["Peso/un (kg)",null,true],["Batch (un)",null,true],
+            ].map(([lbl,col,right])=>(
+              <Th key={lbl} right={right} style={{cursor:col?"pointer":"default",userSelect:"none",whiteSpace:"nowrap"}}
+                onClick={col?()=>toggleOrdenM(col):undefined}>
+                {lbl}{col?sortIconM(col):""}
+              </Th>
+            ))}
+            <Th>Acum. demanda 🔐</Th><Th/>
           </tr></thead>
           <tbody>
             {arts.map((art,i)=>{
               const realIdx = maestro.indexOf(art);
               const pctObj  = (art.pctVUObj != null && art.pctVUObj > 0) ? art.pctVUObj : 0.20;
               const diasObj = (art.vidaUtil * pctObj).toFixed(1);
-              const sc  = sectorColor[art.sector]||{bg:"#f8fafc",color:"#64748b"};
+              const sc  = SECTOR_COLOR[art.sector]||{bg:"#f8fafc",color:"#64748b"};
               const sel = seleccionados.has(realIdx);
               return (
                 <tr key={art.sku+i}
@@ -2029,87 +2392,81 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                     </td>
                   )}
                   <Tv mono dim>{art.sku}</Tv>
+                  {/* DESCRIPCIÓN */}
                   <Tv><span style={{color:C.text}}>{art.desc}</span></Tv>
-                  <Tv><span style={{color:C.accent,fontFamily:"monospace",fontSize:10}}>{art.pasta||"—"}</span></Tv>
-                  <Tv>
-                    <span style={{background:sc.bg,color:sc.color,
-                      padding:"2px 7px",borderRadius:3,fontSize:10,fontWeight:600}}>
-                      {art.sector}
-                    </span>
-                  </Tv>
+                  {/* SECTOR */}
+                  <Tv><span style={{background:sc.bg,color:sc.color,padding:"2px 7px",borderRadius:3,fontSize:10,fontWeight:600}}>{art.sector}</span></Tv>
+                  {/* REVENTA */}
+                  <Tv>{art.reventa?<span style={{background:"#eff6ff",color:"#1d4ed8",padding:"1px 6px",borderRadius:3,fontSize:9,fontWeight:600}}>Reventa</span>:<span style={{color:C.muted,fontSize:10}}>Propio</span>}</Tv>
+                  {/* SUBFAMILIA */}
                   <Tv dim><span style={{fontSize:10}}>{art.subfamilia||"—"}</span></Tv>
+                  {/* PASTA */}
+                  <Tv><span style={{color:C.accent,fontFamily:"monospace",fontSize:10}}>{art.pasta||"—"}</span></Tv>
+                  {/* TIPO PLAN */}
                   <Tv>
-                    {rol==="admin" ? (
-                      <select value={art.tipoPlan||"Stock"}
-                        onChange={e=>{
-                          const copia=[...maestro];
-                          copia[realIdx]={...copia[realIdx],tipoPlan:e.target.value};
-                          setMaestro(copia);
-                        }}
-                        style={{background:C.surface,border:`1px solid ${C.border}`,
-                          color:C.text,padding:"2px 6px",borderRadius:4,fontSize:11,outline:"none"}}>
-                        <option value="Stock">Stock</option>
-                        <option value="Frescos">Frescos</option>
-                        <option value="Contra pedido">Contra pedido</option>
+                    {rol==="admin"?(
+                      <select value={art.tipoPlan||"Stock"} onChange={e=>{const c=[...maestro];c[realIdx]={...c[realIdx],tipoPlan:e.target.value};setMaestro(c);}}
+                        style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"2px 6px",borderRadius:4,fontSize:11,outline:"none"}}>
+                        <option value="Stock">Stock</option><option value="Frescos">Frescos</option><option value="Contra pedido">Contra pedido</option>
                       </select>
-                    ) : (
-                      <span style={{
-                        background: art.tipoPlan==="Frescos"?"#f0fdf4":art.tipoPlan==="Contra pedido"?"#fef3c7":"#f8fafc",
-                        color: art.tipoPlan==="Frescos"?"#15803d":art.tipoPlan==="Contra pedido"?"#92400e":"#64748b",
-                        padding:"2px 7px",borderRadius:3,fontSize:10,fontWeight:600}}>
-                        {art.tipoPlan||"Stock"}
-                      </span>
-                    )}
+                    ):<span style={{background:art.tipoPlan==="Frescos"?"#f0fdf4":art.tipoPlan==="Contra pedido"?"#fef3c7":"#f8fafc",color:art.tipoPlan==="Frescos"?"#15803d":art.tipoPlan==="Contra pedido"?"#92400e":"#64748b",padding:"2px 7px",borderRadius:3,fontSize:10,fontWeight:600}}>{art.tipoPlan||"Stock"}</span>}
                   </Tv>
-                  <Tv right dim>{art.vidaUtil}</Tv>
-                  {/* TME con alerta si diasObj > TME */}
+                  {/* VACÍO */}
+                  <Tv>{art.vacio?<span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>:<span style={{color:C.muted,fontSize:10}}>No</span>}</Tv>
+                  {/* VU — solo lectura SAP */}
+                  <Tv right><span style={{color:C.textDim,fontSize:11}}>{art.vidaUtil}</span></Tv>
+                  {/* TME — alerta si OBJ+SS > TME */}
+                  {(()=>{
+                    const objTotal=(art.objDias||Math.round(art.vidaUtil*0.20))+(art.segDias||0);
+                    const alerta=art.tme>0&&objTotal>art.tme;
+                    return <Tv right><span style={{color:alerta?"#b91c1c":C.textDim,fontWeight:alerta?700:400}}>{art.tme||"—"}{alerta?" ⚠":""}</span></Tv>;
+                  })()}
+                  {/* TER — editable */}
                   <Tv right>
-                    {art.tme ? (
-                      <span style={{color: diasObj > art.tme ? "#b91c1c" : C.textDim, fontWeight: diasObj > art.tme ? 700 : 400}}>
-                        {art.tme}d
-                        {diasObj > art.tme && <span title="Stock objetivo supera el TME"> ⚠</span>}
-                      </span>
-                    ) : <span style={{color:C.muted}}>—</span>}
+                    {rol==="admin"
+                      ?<Inp value={art.ter!=null?art.ter:(art.reventa?15:7)} width={48} onChange={v=>{const c=[...maestro];c[realIdx]={...c[realIdx],ter:Math.max(1,+v)};setMaestro(c);}}/>
+                      :<span style={{color:C.textDim}}>{art.ter||(art.reventa?15:7)}</span>}
                   </Tv>
+                  {/* SS — editable */}
                   <Tv right>
-                    {rol==="admin" ? (
-                      <div style={{display:"flex",alignItems:"center",gap:3,justifyContent:"flex-end"}}>
-                        <Inp value={Math.round(pctObj*100)} width={48}
-                          onChange={v=>{
-                            const copia=[...maestro];
-                            copia[realIdx]={...copia[realIdx],pctVUObj:Math.max(1,Math.min(100,v))/100};
-                            setMaestro(copia);
-                          }}/>
-                        <span style={{fontSize:10,color:C.muted}}>%</span>
-                      </div>
-                    ) : (
-                      <span style={{color:art.pctVUObj?C.accent:C.muted,fontWeight:art.pctVUObj?600:400}}>
-                        {Math.round(pctObj*100)}%
-                        {art.pctVUObj&&<span style={{fontSize:9,color:C.accent}}> ✎</span>}
-                      </span>
-                    )}
+                    {rol==="admin"
+                      ?<Inp value={art.segDias||0} width={48} onChange={v=>{const c=[...maestro];c[realIdx]={...c[realIdx],segDias:Math.max(0,+v)};setMaestro(c);}}/>
+                      :<span style={{color:C.textDim}}>{art.segDias||0}</span>}
                   </Tv>
-                  <Tv right><span style={{color:C.ok.color,fontWeight:600}}>{diasObj}d</span></Tv>
+                  {/* TER+SS vs TME (%) */}
+                  {(()=>{
+                    const ter=art.ter||(art.reventa?15:7);
+                    const ss=art.segDias||0;
+                    const total=ter+ss;
+                    const pct=art.tme>0?Math.round(total/art.tme*100):null;
+                    return <Tv right>{pct!=null?<span style={{color:pct>100?"#b91c1c":pct>80?"#d97706":C.ok.color,fontWeight:pct>100?700:400}}>{pct}%{pct>100?" ⚠":""}</span>:<span style={{color:C.muted}}>—</span>}</Tv>;
+                  })()}
+                  {/* Stk mín (leadtime + SS) */}
+                  {(()=>{
+                    const sMin=(art.leadTime||3)+(art.segDias||0);
+                    return <Tv right dim><span style={{fontSize:11}}>{sMin}</span></Tv>;
+                  })()}
+                  {/* Stk máx (TME - SS) */}
+                  {(()=>{
+                    const ss=art.segDias||0;
+                    const sMax=art.tme>0 ? art.tme-ss : null;
+                    const ter=art.ter||(art.reventa?15:7);
+                    const sObj=ter+ss;
+                    const alerta=art.tme>0&&sObj>art.tme;
+                    return <Tv right>
+                      {sMax!=null
+                        ?<span style={{color:alerta?"#b91c1c":C.textDim}}>{sMax}{alerta?" ⚠":""}</span>
+                        :<span style={{color:C.muted}}>—</span>}
+                    </Tv>;
+                  })()}
+                  {/* BATCH, BATCH MIN, LEADTIME, PESO/UN, BATCH UN */}
                   <Tv right dim>{art.kgBatch.toLocaleString("es-UY")}</Tv>
                   <Tv right dim>{art.kgBatchMin.toLocaleString("es-UY")}</Tv>
                   <Tv right dim>{art.leadTime}</Tv>
                   <Tv right dim>{art.pesoUnitario||"—"}</Tv>
                   <Tv right dim>{art.unBatera||"—"}</Tv>
-                  <Tv>
-                    {art.permiteArrastre===false
-                      ? <span style={{color:C.muted,fontSize:10}}>No</span>
-                      : <span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>}
-                  </Tv>
-                  <Tv>
-                    {art.reventa
-                      ? <span style={{background:"#eff6ff",color:"#1d4ed8",padding:"1px 6px",borderRadius:3,fontSize:9,fontWeight:600}}>Reventa</span>
-                      : <span style={{color:C.muted,fontSize:10}}>Propio</span>}
-                  </Tv>
-                  <Tv>
-                    {art.vacio
-                      ? <span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>
-                      : <span style={{color:C.muted,fontSize:10}}>No</span>}
-                  </Tv>
+                  {/* ACUMULA DEMANDA */}
+                  <Tv>{art.permiteArrastre===false?<span style={{color:C.muted,fontSize:10}}>No</span>:<span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>}</Tv>
                   <Tv>
                     {rol==="admin"&&(
                       <button onClick={()=>editar(realIdx)}
@@ -2294,7 +2651,7 @@ function PanelInstructivo() {
           <H3>Semana S — Producción</H3>
           <Formula>
             Prod. total S = Prod. acumulada (SAP) + Prod. pendiente (plan planta){"\n\n"}
-            Prod. pendiente sugerida = max(0, Venta total S + Stock objetivo − Stock actual − Prod. acum.)
+            Prod. pendiente sugerida = max(0, Venta total S + Stock objetivo − Stock actual − Ped. acum.)
           </Formula>
 
           <H3>Stock cierre S</H3>
@@ -2308,13 +2665,13 @@ function PanelInstructivo() {
           <Formula>
             Stock objetivo S+1 = (Fcst S+1 / 7) × Días objetivo{"\n"}
             Días objetivo = Vida útil × 20%{"\n\n"}
-            Prod. óptima S+1 = max(0, Fcst S+1 + Stock objetivo S+1 − max(0, Stock cierre S))
+            Pedido sugerido S+1 = max(0, Fcst S+1 + Stock objetivo S+1 − max(0, Stock cierre S))
           </Formula>
           <P>La producción óptima es la <strong>referencia calculada</strong> por la herramienta. El planner puede ajustarla según restricciones de batch, capacidad y lead time.</P>
 
           <H3>Stock cierre S+1</H3>
           <Formula>
-            Stock cierre S+1 = max(0, Stock cierre S) − Fcst S+1 + Prod. S+1 (ajustada por planner)
+            Stock cierre S+1 = max(0, Stock cierre S) − Fcst S+1 + Ped. S+1 (ajustada por planner)
           </Formula>
 
           <H3>Días de stock</H3>
@@ -2328,7 +2685,7 @@ function PanelInstructivo() {
           <Formula>
             Arrastre = max(0, Fcst pendiente − max(0, Stock cierre S)){"\n"}
             Fcst S+1 efectivo = Fcst S+1 base + Arrastre{"\n\n"}
-            Solo aplica a artículos con "Permite arrastre = Sí" en el Maestro.{"\n"}
+            Solo aplica a artículos con "Acumula demanda = Sí" en el Maestro.{"\n"}
             Por defecto: Sí para productos con VU {">"} 12 días, No para frescos.
           </Formula>
         </>}
@@ -2381,7 +2738,7 @@ function PanelInstructivo() {
             9;2800;3500{"\n"}
             ...
           </Formula>
-          <P><Tag>Prod pend S</Tag> es lo que planta planifica producir en los días restantes de la semana actual. <Tag>Prod S+1</Tag> es el plan de producción para la semana siguiente, confirmado con planta.</P>
+          <P><Tag>Prod pend S</Tag> es lo que planta planifica producir en los días restantes de la semana actual. <Tag>Prod S+1</Tag> es el planificación de abastecimiento para la semana siguiente, confirmado con planta.</P>
 
           <H3>Producción acumulada</H3>
           <P>Por ahora se carga manualmente celda a celda en la tabla de la pestaña Producción. En una etapa futura se conectará directamente con SAP.</P>
@@ -2414,7 +2771,7 @@ function PanelInstructivo() {
               ["Kg/Batch","Tamaño del batch de producción","Referencia para la propuesta de producción","Sí 🔐"],
               ["Kg/Batch mínimo","Batch mínimo operable","Cantidad mínima para iniciar producción","Sí 🔐"],
               ["Lead time (días)","Días entre pedido y disponibilidad","Planificación de semielaborados (Fase 2)","Sí 🔐"],
-              ["Permite arrastre","Si la demanda no atendida se suma al fcst S+1","Activa el arrastre cuando el toggle está encendido","Sí 🔐"],
+              ["Acumula demanda","Si la demanda no atendida se suma al fcst S+1","Activa el arrastre cuando el toggle está encendido","Sí 🔐"],
             ]}
           />
 
@@ -2522,11 +2879,38 @@ function PanelCarga({ maestro,
       plantilla:"SKU;Pedidos_pend_kg\n"+maestro.map(a=>`${a.sku};0`).join("\n"),
       onCargar: mkCargar(setPedidosPend,"pedidosPend"),
       onLimpiar: ()=>{ setPedidosPend({}); registrarLog("pedidosPend",{ok:0,noMatch:0,err:0,skusNoMatch:[]}); } },
-    { id:"produccion",  label:"Producción",         icono:"🏭", color:"#7c3aed",
-      desc:"SKU · Prod acum · Prod pendiente S",
-      plantilla:"SKU;Prod_pend_S;Prod_S+1\n"+maestro.map(a=>`${a.sku};0;0`).join("\n"),
+    { id:"produccion",  label:"Producción (propia)",  icono:"🏭", color:"#7c3aed",
+      desc:"SKU · Prod acum · Prod pendiente S — artículos de producción propia",
+      plantilla:"SKU;Prod_pend_S;Prod_S+1\n"+maestro.filter(a=>!a.reventa).map(a=>`${a.sku};0;0`).join("\n"),
       onCargar: cargarProd,
       onLimpiar: ()=>{ setProdAcum({}); setProdPend({}); registrarLog("produccion",{ok:0,noMatch:0,err:0,skusNoMatch:[]}); } },
+    { id:"ordenes",     label:"Órdenes de compra abiertas", icono:"🛒", color:"#0891b2",
+      desc:"SKU · Cantidad pendiente — artículos de reventa con OC abierta",
+      plantilla:"SKU;Cantidad_pendiente\n"+maestro.filter(a=>a.reventa).map(a=>`${a.sku};0`).join("\n"),
+      onCargar: (rows)=>{
+        let ok=0, noMatch=0; const skusNoMatch=[];
+        const pend={};
+        rows.forEach(r=>{
+          if (r.length<2) return;
+          const sku=r[0]?.trim();
+          if (!sku||sku.toLowerCase()==="sku") return;
+          pend[sku]=parseKg(r[1]);
+          if (skuSet.has(sku)) ok++; else { noMatch++; skusNoMatch.push(sku); }
+        });
+        setProdPend(p=>({...p,...pend}));
+        const res={ok,noMatch,err:0,skusNoMatch};
+        registrarLog("ordenes",res);
+        return res;
+      },
+      onLimpiar: ()=>{ 
+        // Solo limpia SKUs de reventa
+        setProdPend(prev=>{
+          const next={...prev};
+          maestro.filter(a=>a.reventa).forEach(a=>delete next[a.sku]);
+          return next;
+        });
+        registrarLog("ordenes",{ok:0,noMatch:0,err:0,skusNoMatch:[]});
+      }},
     { id:"forecast",    label:"Forecast",           icono:"📊", color:"#2563eb",
       desc:"SKU · Fcst S · Fcst S+1 · Fcst S+2",
       plantilla:"SKU;S_actual;S+1;S+2\n"+maestro.map(a=>`${a.sku};0;0;0`).join("\n"),
@@ -2619,7 +3003,7 @@ function PanelCarga({ maestro,
                   style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
               </div>
             </div>
-            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:10,maxHeight:120,overflowY:"auto"}}>
               {logs[verDetalle].skusNoMatch.map(sku=>(
                 <span key={sku} style={{background:"#fef3c7",color:"#92400e",
                   border:"1px solid #fde68a",padding:"2px 8px",borderRadius:4,
@@ -2664,7 +3048,7 @@ export default function App() {
   const [prodS2, setProdS2]             = useState(PROD_S2_INI);
 
   // ── LOGS DE CARGA ──
-  const LOG_INI = { stock:null, ventaAcum:null, pedidosPend:null, produccion:null, forecast:null };
+  const LOG_INI = { stock:null, ventaAcum:null, pedidosPend:null, produccion:null, ordenes:null, forecast:null };
   const [logs, setLogs] = useState(LOG_INI);
 
   function registrarLog(fuente, {ok, noMatch, err, skusNoMatch=[]}) {
@@ -2680,9 +3064,9 @@ export default function App() {
 
   function exportarSesion() {
     const sesion = {
-      version: 1,
+      version: 2,
       fecha: new Date().toISOString(),
-      maestro, politica,
+      maestro, politica, logs,
       fcstActual, fcstS2, fcstS3,
       stockActual, ventaAcum, pedidosPend,
       prodAcum, prodPend, prodS2,
@@ -2698,6 +3082,7 @@ export default function App() {
         const s = JSON.parse(e.target.result);
         if (s.maestro)     setMaestro(s.maestro);
         if (s.politica)    setPolitica(s.politica);
+        if (s.logs)        setLogs(s.logs);
         if (s.fcstActual)  setFcstActual(s.fcstActual);
         if (s.fcstS2)      setFcstS2(s.fcstS2);
         if (s.fcstS3)      setFcstS3(s.fcstS3);
@@ -2737,7 +3122,7 @@ export default function App() {
         display:"flex",alignItems:"center",justifyContent:"space-between",background:C.surface}}>
         <div>
           <div style={{fontSize:16,fontWeight:800,color:C.text,letterSpacing:"-0.02em"}}>
-            Planificación de Producción
+            Planificación de Abastecimiento
           </div>
           <div style={{fontSize:11,color:C.muted,marginTop:1}}>
             {maestro.length} artículos · {(() => {
