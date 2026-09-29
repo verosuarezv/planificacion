@@ -563,14 +563,14 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const kgBatchMin = art.kgBatchMin || 500;
   const necesidad = Math.max(0, fcstS2v + stkObjKg - stkCierreSPos);
   let prodOptS2 = 0;
-  if (necesidad > 0 && kgBatchMin > 0) {
-    // Siempre redondear hacia arriba para no quedar en déficit
-    const batches = necesidad / kgBatchMin;
-    prodOptS2 = Math.ceil(batches) * kgBatchMin;
-    // Recortar al stock máximo si se supera
+  if (necesidad > 0) {
+    const kgBatch = art.kgBatch || kgBatchMin;
+    // 1. Redondear al batch completo hacia arriba
+    prodOptS2 = Math.ceil(necesidad / kgBatch) * kgBatch;
+    // 2. Si supera el stock máximo → usar batch mínimo redondeado hacia abajo
     if (stkMaxKg != null && (stkCierreSPos + prodOptS2) > stkMaxKg) {
-      const batchesMax = Math.floor((stkMaxKg - stkCierreSPos) / kgBatchMin);
-      prodOptS2 = Math.max(0, batchesMax) * kgBatchMin;
+      prodOptS2 = Math.floor((stkMaxKg - stkCierreSPos) / kgBatchMin) * kgBatchMin;
+      prodOptS2 = Math.max(0, prodOptS2);
     }
   }
 
