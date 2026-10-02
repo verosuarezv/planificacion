@@ -2150,67 +2150,6 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
         </div>
       </div>
 
-      {/* ── ALERTAS DE STOCK ── */}
-      <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:10,
-        padding:"16px 20px",marginBottom:20}}>
-        <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:12}}>
-          Alertas de stock {rol==="admin"&&<span style={{color:C.accent}}>🔐</span>}
-        </div>
-        <div style={{overflowX:"auto"}}>
-          <table style={{borderCollapse:"collapse",fontSize:12,width:"100%"}}>
-            <thead>
-              <tr style={{borderBottom:`1px solid ${C.hairline}`}}>
-                <Th>Estado</Th>
-                <Th right>Desde (% VU)</Th>
-                <Th right>Hasta (% VU)</Th>
-                <Th>Ejemplo VU 60d</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {filasOrden.map((k,i)=>{
-                const v = politica[k];
-                if (!v || v.min===null) return null;
-                const desdePct = Math.round((v.min||0)*100);
-                const hastaPct = v.max!=null ? Math.round(v.max*100) : null;
-                const desdeD   = Math.round(60*(v.min||0));
-                const hastaD   = v.max!=null ? Math.round(60*v.max) : null;
-                const esUltima = i===filasOrden.length-1; // faltante: el "desde" siempre es 0%, no editable
-                return (
-                  <tr key={k} style={{borderTop:`1px solid ${C.faint}`}}>
-                    <Tv>
-                      <span style={{background:v.bg,color:v.color,border:`1px solid ${v.border}`,
-                        padding:"2px 8px",borderRadius:10,fontSize:10,fontWeight:600}}>
-                        {v.label}
-                      </span>
-                    </Tv>
-                    <Tv right>
-                      {(!esUltima && rol==="admin") ? (
-                        <div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
-                          <Inp value={desdePct} width={55}
-                            onChange={val=>setLimite(k,val)}/>
-                          <span style={{color:C.muted,fontSize:11}}>%</span>
-                        </div>
-                      ) : <span style={{color:C.textDim,fontSize:12}}>{desdePct}%</span>}
-                    </Tv>
-                    <Tv right>
-                      {hastaPct!=null
-                        ? <span style={{color:C.textDim}}>{hastaPct}%</span>
-                        : <span style={{color:C.muted,fontSize:11}}>sin límite</span>}
-                    </Tv>
-                    <Tv dim>
-                      {desdeD}d {hastaD!=null?`→ ${hastaD}d`:"→ ∞"}
-                    </Tv>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div style={{fontSize:10,color:C.muted,marginTop:10}}>
-          Stock objetivo = 20% de la vida útil · Los umbrales definen el semáforo de alertas
-        </div>
-      </div>
-
       {/* ── BARRA DE CONTROLES ── */}
       <div style={{display:"flex",gap:10,marginBottom:14,alignItems:"center",flexWrap:"wrap"}}>
         <input placeholder="Buscar SKU, descripción o pasta..." value={buscar}
