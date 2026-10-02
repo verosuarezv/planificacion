@@ -55,8 +55,18 @@ const POLITICA_DEFAULT = {
   sinForecast:      { min:null, color:"#94a3b8", bg:"#f8fafc", border:"#e2e8f0", label:"Sin forecast" },
 };
 
-function getEstado(diasStock, vidaUtil, fcst) {
+function getEstado(diasStock, vidaUtil, fcst, diasMin, diasObj, diasMax) {
   if (!fcst || fcst === 0) return "sinForecast";
+  if (diasStock <= 0) return "faltante";
+  // Si tenemos parámetros configurados, usarlos
+  if (diasMin != null && diasObj != null) {
+    if (diasMax != null && diasStock > diasMax) return "sobrestockRiesgo";
+    if (diasStock > diasObj) return "sobrestockAlerta";
+    if (diasStock >= diasMin) return "ok";
+    if (diasStock > 0) return "substockAlerta";
+    return "faltante";
+  }
+  // Fallback: % de VU (para artículos sin parámetros configurados)
   const pct = vidaUtil > 0 ? diasStock / vidaUtil : 0;
   if (pct >= 0.80) return "sobrestockRiesgo";
   if (pct >= 0.30) return "sobrestockAlerta";
@@ -365,6 +375,13 @@ const Inp = ({value,onChange,width=64})=>(
       borderRadius:5,background:C.inputBg,color:C.text,fontSize:12,
       textAlign:"center",outline:"none",fontFamily:"inherit"}}/>
 );
+const InpDec = ({value,onChange,width=64,step=0.5})=>(
+  <input type="number" value={value??0} min={0} step={step}
+    onChange={e=>onChange(Math.max(0,+e.target.value))}
+    style={{width,padding:"3px 6px",border:`1px solid ${C.inputBorder}`,
+      borderRadius:5,background:C.inputBg,color:C.text,fontSize:12,
+      textAlign:"center",outline:"none",fontFamily:"inherit"}}/>
+);
 
 // Valor de solo lectura con hint debajo
 const Val = ({v,hint,color,bold})=>(
@@ -508,7 +525,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   // Umbrales en días
   const diasMin  = leadTime + ss;              // punto de pedido = leadtime + SS
   const diasObj  = ter + ss;                   // stock objetivo = TER + SS
-  const diasMax  = tme > 0 ? tme - ss : null; // stock máximo = TME - SS (límite duro)
+  const diasMax  = tme > 0 ? tme : null; // stock máximo = TME × demanda (límite duro)
   const pctObj   = vu > 0 ? diasObj / vu : 0.20;
 
   // Alerta: stock objetivo supera TME → parámetros mal configurados
@@ -518,7 +535,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const stkActual    = stockActual[art.sku] || 0;
   const fcst         = fcstS[art.sku] || 0;
   const diasActual   = calcDias(stkActual, fcst);
-  const estadoActual = getEstado(diasActual, vu, fcst);
+  const estadoActual = getEstado(diasActual, vu, fcst, diasMin, diasObj, diasMax);
 
   // ── VENTA S ──
   const factAcum  = ventaAcum[art.sku] || 0;
@@ -544,7 +561,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
 
   // Días stock cierre S: medido contra fcst S+1 (es lo que el stock tiene que cubrir)
   const diasS    = calcDias(Math.max(0, stkCierreS), fcstS2v);
-  const estadoS  = getEstado(diasS, vu, fcstS2v);
+  const estadoS  = getEstado(diasS, vu, fcstS2v, diasMin, diasObj, diasMax);
 
   // ── PEDIDO SUGERIDO S+1 ──
   const fcstS3v   = fcstS3[art.sku] || 0;
@@ -567,9 +584,13 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
     const kgBatch = art.kgBatch || kgBatchMin;
     // 1. Redondear al batch completo hacia arriba
     prodOptS2 = Math.ceil(necesidad / kgBatch) * kgBatch;
-    // 2. Si supera el stock máximo → usar batch mínimo redondeado hacia abajo
+    // 2. Si supera stock máximo → redondear batch completo hacia abajo
     if (stkMaxKg != null && (stkCierreSPos + prodOptS2) > stkMaxKg) {
-      prodOptS2 = Math.floor((stkMaxKg - stkCierreSPos) / kgBatchMin) * kgBatchMin;
+      prodOptS2 = Math.floor((stkMaxKg - stkCierreSPos) / kgBatch) * kgBatch;
+      // 3. Si queda por debajo del stock mínimo → usar batch mínimo
+      if (prodOptS2 < stkMinKg && kgBatchMin > 0) {
+        prodOptS2 = kgBatchMin;
+      }
       prodOptS2 = Math.max(0, prodOptS2);
     }
   }
@@ -585,7 +606,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const stkCierreS2 = Math.max(0, stkCierreS) - fcstS2v + prodS2val;
   // Días medidos contra fcst S+2
   const diasS2      = calcDias(Math.max(0, stkCierreS2), fcstS3v);
-  const estadoS2    = getEstado(diasS2, vu, fcstS3v);
+  const estadoS2    = getEstado(diasS2, vu, fcstS3v, diasMin, diasObj, diasMax);
 
   return {
     stkActual, diasActual, estadoActual,
@@ -2430,7 +2451,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                   {/* SS — editable */}
                   <Tv right>
                     {rol==="admin"
-                      ?<Inp value={art.segDias||0} width={48} onChange={v=>{const c=[...maestro];c[realIdx]={...c[realIdx],segDias:Math.max(0,+v)};setMaestro(c);}}/>
+                      ?<InpDec value={art.segDias||0} width={48} onChange={v=>{const c=[...maestro];c[realIdx]={...c[realIdx],segDias:Math.max(0,+v)};setMaestro(c);}}/>
                       :<span style={{color:C.textDim}}>{art.segDias||0}</span>}
                   </Tv>
                   {/* TER+SS vs TME (%) */}
@@ -2449,7 +2470,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                   {/* Stk máx (TME - SS) */}
                   {(()=>{
                     const ss=art.segDias||0;
-                    const sMax=art.tme>0 ? art.tme-ss : null;
+                    const sMax=art.tme>0 ? art.tme : null;
                     const ter=art.ter||(art.reventa?15:7);
                     const sObj=ter+ss;
                     const alerta=art.tme>0&&sObj>art.tme;
@@ -2566,6 +2587,47 @@ function PanelInstructivo() {
         borderRadius:10,padding:"24px 28px",maxWidth:760}}>
 
         {seccion==="flujo"&&<>
+          <H2>Flujo del proceso de abastecimiento</H2>
+          <P>El proceso tiene una cadencia semanal con dos reuniones de alineación fijas y un cierre de pedidos el lunes.</P>
+
+          <H3>Jueves 13hs — Reunión Planificación + Planta</H3>
+          <Tabla headers={["Quién","Qué"]} rows={[
+            ["Planta","Informa producción elaborada pero no cerrada en SAP, producción en proceso y plan hasta fin de semana"],
+            ["Planificación","Carga esa información en la herramienta (pedido pendiente S)"],
+            ["Ambos","Revisan el borrador del plan S+1 y anticipan posibles ajustes"],
+          ]}/>
+
+          <H3>Viernes 8am — Cálculo y envío del pedido</H3>
+          <Tabla headers={["Fuente","Dato","Cómo llega"]} rows={[
+            ["SAP","Stock actual del CD","Manual (futuro: automático)"],
+            ["SAP","Venta facturada acumulada","Manual (futuro: automático)"],
+            ["SAP","Pedidos pendientes sin facturar","Manual (futuro: automático)"],
+            ["SAP","Órdenes de compra abiertas (reventa)","Manual (futuro: automático)"],
+            ["Comercial","Forecast S, S+1 y S+2","CSV importado en la herramienta"],
+            ["Planificación","Genera el Pedido a Planta / Pedido de compra con cantidades sugeridas S+1","Exportado desde pestaña Pedido a Planta"],
+          ]}/>
+
+          <H3>Viernes 13hs — Reunión Planificación + Planta</H3>
+          <Tabla headers={["Quién","Qué"]} rows={[
+            ["Planificación","Presenta el pedido generado y el estado de stock proyectado S+1"],
+            ["Planta","Confirma o ajusta el plan S+1 según capacidad, batches y lead times"],
+            ["Planificación","Carga el plan confirmado en la herramienta (genera solicitud de traslado en SAP)"],
+          ]}/>
+
+          <H3>Lunes — Ajuste final de pedidos</H3>
+          <Tabla headers={["Hora","Quién","Qué"]} rows={[
+            ["Durante el día","Planificación / Planta","Ajustes finales si hay variaciones de último momento"],
+            ["Fin del día","Planificación","Generación de solicitudes de traslado adicionales en SAP"],
+          ]}/>
+
+          <H3>Diario — Ajuste operativo</H3>
+          <Tabla headers={["Momento","Quién","Qué"]} rows={[
+            ["8:00hs","Planta","Corte para chorizos frescos (VU ≤ 12d). Se confirma o ajusta producción del día."],
+            ["13:00hs","Planta","Corte para especiales y feteados (contra pedido)."],
+          ]}/>
+        </>}
+
+        {false&&<>
           <H2>Flujo del proceso de planificación</H2>
           <P>El proceso tiene una cadencia semanal con dos reuniones de alineación fijas y un cierre de pedidos el lunes.</P>
 
@@ -2641,145 +2703,133 @@ function PanelInstructivo() {
           <P>Todas las fórmulas operan sobre kg. Los cálculos se realizan semana a semana, de izquierda a derecha en la tabla de Plan & Estado.</P>
 
           <H3>Semana S — Venta</H3>
-          <Formula>
-            Fcst pendiente = Fcst S − Venta facturada acum. − Pedidos pendientes{"\n"}
-            {"  "}→ Si es negativo: sobrevendieron vs. forecast{"\n"}
-            {"  "}→ Si es positivo: falta cubrir con stock + producción{"\n\n"}
-            Venta total S = Fact. acum. + Pedidos pend. + max(0, Fcst pendiente)
-          </Formula>
+          <Formula>Fcst pendiente = Fcst S − Venta facturada acum. − Pedidos pendientes</Formula>
+          <P>→ Avance {">"} 120%: <Tag color="#1d4ed8" bg="#eff6ff">SOBREVENTA</Tag> &nbsp; → Avance {"<"} 40%: <Tag color="#b91c1c" bg="#fef2f2">SUBVENTA</Tag></P>
+          <Formula>Venta total S = Fact. acum. + Pedidos pend. + max(0, Fcst pendiente)</Formula>
 
-          <H3>Semana S — Producción</H3>
-          <Formula>
-            Prod. total S = Prod. acumulada (SAP) + Prod. pendiente (plan planta){"\n\n"}
-            Prod. pendiente sugerida = max(0, Venta total S + Stock objetivo − Stock actual − Ped. acum.)
-          </Formula>
+          <H3>Semana S — Pedido</H3>
+          <Formula>Pedido total S = Pedido acumulado (SAP) + Pedido pendiente</Formula>
 
           <H3>Stock cierre S</H3>
+          <Formula>Stock cierre S = Stock actual − max(0, Fcst pendiente) + Pedido pendiente S</Formula>
+
+          <H3>Parámetros de abastecimiento (configurables en Maestro)</H3>
+          <Formula>TER = Tiempo entre reposiciones (días)</Formula>
+          <P>Default: 7 días producción propia / 15 días reventa</P>
+          <Formula>SS = Stock de seguridad (días)</Formula>
+          <P>Configurable por artículo. Acepta decimales (ej: 0,5 días).</P>
+          <Formula>Demanda diaria = Fcst S+1 / 7</Formula>
+
+          <H3>Umbrales de stock (en días y en kg)</H3>
           <Formula>
-            Stock cierre S = Stock actual − Venta total S + Prod. total S{"\n"}
-            {"  "}→ Puede ser negativo (déficit){"\n"}
-            {"  "}→ Si Fcst pendiente es negativo (sobreventa), no se resta demanda adicional
+            Stock mínimo  = (Leadtime + SS) × demanda diaria  → punto de disparo de pedido{"\n"}
+            Stock objetivo = (TER + SS) × demanda diaria       → nivel deseado al cierre de S+1{"\n"}
+            Stock máximo  = TME × demanda diaria               → límite duro (no superar)
           </Formula>
 
-          <H3>Semana S+1 — Producción óptima</H3>
+          <H3>Pedido sugerido S+1</H3>
           <Formula>
-            Stock objetivo S+1 = (Fcst S+1 / 7) × Días objetivo{"\n"}
-            Días objetivo = Vida útil × 20%{"\n\n"}
-            Pedido sugerido S+1 = max(0, Fcst S+1 + Stock objetivo S+1 − max(0, Stock cierre S))
+            Necesidad = Fcst S+1 + Stock objetivo − Stock cierre S{"\n\n"}
+            1. Redondear al batch completo hacia ARRIBA{"\n"}
+            2. Si supera stock máximo → redondear batch completo hacia ABAJO{"\n"}
+            {"   "}→ Si el resultado es menor al stock mínimo → usar batch mínimo{"\n\n"}
+            ⚠ Alerta batch: si stock cierre S + batch mínimo {">"} stock máximo
           </Formula>
-          <P>La producción óptima es la <strong>referencia calculada</strong> por la herramienta. El planner puede ajustarla según restricciones de batch, capacidad y lead time.</P>
+          <P>El pedido sugerido es la <strong>referencia calculada</strong>. El planner puede ajustarlo manualmente en la tabla.</P>
+
+          <H3>Alertas de parámetros (en Maestro)</H3>
+          <Formula>
+            OBJ+SS vs TME (%) = (TER + SS) / TME × 100{"\n"}
+            {"  "}→ {">"} 100%: los parámetros están mal configurados (TER o SS demasiado alto para el TME)
+          </Formula>
 
           <H3>Stock cierre S+1</H3>
           <Formula>
-            Stock cierre S+1 = max(0, Stock cierre S) − Fcst S+1 + Ped. S+1 (ajustada por planner)
+            Stock cierre S+1 = max(0, Stock cierre S) − Fcst S+1 + Pedido S+1
           </Formula>
 
           <H3>Días de stock</H3>
           <Formula>
             Días de stock = (kg en stock / Fcst semanal) × 7{"\n"}
-            {"  "}→ Si Fcst = 0: se muestra como "Sin forecast" (no es faltante){"\n"}
-            {"  "}→ Si stock > 0 y Fcst = 0: se muestra "∞"
+            {"  "}→ Si Fcst = 0: "Sin forecast"{"\n"}
+            {"  "}→ Si stock {">"} 0 y Fcst = 0: "∞"
           </Formula>
 
-          <H3>Arrastre S → S+1 (opcional)</H3>
+          <H3>Acumula demanda S → S+1 (opcional)</H3>
           <Formula>
-            Arrastre = max(0, Fcst pendiente − max(0, Stock cierre S)){"\n"}
-            Fcst S+1 efectivo = Fcst S+1 base + Arrastre{"\n\n"}
-            Solo aplica a artículos con "Acumula demanda = Sí" en el Maestro.{"\n"}
-            Por defecto: Sí para productos con VU {">"} 12 días, No para frescos.
+            Si el toggle está activo y el artículo tiene "Acumula demanda = Sí":{"\n"}
+            Fcst S+1 efectivo = Fcst S+1 + max(0, Fcst pendiente S − max(0, Stock cierre S))
           </Formula>
         </>}
 
         {seccion==="politica"&&<>
-          <H2>Política de stock</H2>
-          <P>Los estados de stock se calculan como porcentaje de la vida útil (VU) del producto. Los umbrales son configurables por Admin en la pestaña Maestro.</P>
-
-          <Tabla
-            headers={["Estado","Rango % VU","Descripción","Acción sugerida"]}
-            rows={[
-              [<Tag color="#92400e" bg="#fffbeb">Riesgo Vto.</Tag>,"{">"} 80% VU","Stock muy alto, riesgo de vencimiento antes de venderse","Frenar producción. Evaluar descuentos o acciones comerciales."],
-              [<Tag color="#b45309" bg="#fffbeb">Sobrestock</Tag>,"30–80% VU","Stock por encima del objetivo, sin riesgo inmediato","Reducir o eliminar producción esta semana."],
-              [<Tag color="#15803d" bg="#f0fdf4">OK</Tag>,"10–30% VU","Stock dentro de la zona objetivo (default: 20% VU)","Producción normal según plan."],
-              [<Tag color="#c2410c" bg="#fff7ed">Substock</Tag>,"1–10% VU","Stock bajo el objetivo, riesgo de quiebre próximo","Priorizar producción. Revisar plan S+1."],
-              [<Tag color="#b91c1c" bg="#fef2f2">Faltante</Tag>,"0–1% VU","Stock prácticamente agotado","Producción urgente. Alertar a Comercial."],
-              [<Tag color="#94a3b8" bg="#f8fafc">Sin forecast</Tag>,"—","No hay forecast cargado para este producto","Verificar con Comercial si el producto sigue activo."],
-            ]}
-          />
-
-          <H3>Stock objetivo por producto</H3>
+          <H2>Alertas de stock</H2>
+          <P>Los estados se calculan comparando los días de stock contra los parámetros de abastecimiento configurados en el Maestro (TER, SS, Leadtime, TME). Para Centenario, el TME equivale a la VU ya que el CD exige el 100% de VU restante al momento de la entrega.</P>
+          <Tabla headers={["Estado","Color","Condición","Acción sugerida"]} rows={[
+            [<Tag color="#6d28d9" bg="#f5f3ff">Riesgo Vto.</Tag>,"🟣 Violeta","Días de stock > Stock máximo (TME)","Frenar producción. Evaluar acciones comerciales."],
+            [<Tag color="#1d4ed8" bg="#eff6ff">Sobrestock</Tag>,"🔵 Azul","Stock objetivo < días ≤ Stock máximo","Reducir o eliminar producción esta semana."],
+            [<Tag color="#15803d" bg="#f0fdf4">OK</Tag>,"🟢 Verde","Stock mínimo ≤ días ≤ Stock objetivo","Pedido normal según sugerido."],
+            [<Tag color="#ca8a04" bg="#fefce8">Substock</Tag>,"🟡 Amarillo","0 < días < Stock mínimo","Priorizar pedido. Revisar plan S+1."],
+            [<Tag color="#b91c1c" bg="#fef2f2">Faltante</Tag>,"🔴 Rojo","Días de stock = 0","Pedido urgente. Alertar a Comercial."],
+            [<Tag color="#94a3b8" bg="#f8fafc">Sin forecast</Tag>,"⚪ Gris","Fcst = 0","Verificar con Comercial si el artículo sigue activo."],
+          ]}/>
           <Formula>
-            Días objetivo = Vida útil × 20%{"\n\n"}
-            Ejemplo — Chorizo Extra (VU 12d):  objetivo = 2.4 días de stock{"\n"}
-            Ejemplo — Jamón ET. Dorada (VU 120d): objetivo = 24 días de stock{"\n"}
-            Ejemplo — Panceta Bacon (VU 60d):   objetivo = 12 días de stock
+            Stock mínimo  = (Leadtime + SS) × demanda diaria{"\n"}
+            Stock objetivo = (TER + SS) × demanda diaria{"\n"}
+            Stock máximo  = TME × demanda diaria
           </Formula>
-          <P>El 20% se origina en que ciertos clientes exigen que los productos se entreguen con al menos el 80% de la vida útil restante. Eso deja una ventana de comercialización del 20% de la VU desde la fecha de elaboración.</P>
+          <P>Los umbrales de la política se configuran en <strong>Maestro → Alertas de stock</strong> (solo Admin).</P>
         </>}
 
         {seccion==="cargas"&&<>
           <H2>Carga de datos</H2>
+          <P>Todos los archivos usan <strong>punto y coma (;)</strong> como separador. La primera fila es el encabezado. Los números usan coma decimal.</P>
 
-          <H3>Formato CSV general</H3>
-          <P>Todos los archivos usan <strong>punto y coma (;)</strong> como separador. Los números usan coma decimal (formato UY/ES). La primera fila es el encabezado y se ignora automáticamente.</P>
+          <Tabla headers={["Fuente","Formato CSV","Notas"]} rows={[
+            ["Stock","SKU;Stock_kg","Stock disponible en CD"],
+            ["Venta acumulada","SKU;Venta_acum_kg","Facturado acumulado a la fecha"],
+            ["Pedidos pendientes","SKU;Pedidos_pend_kg","Confirmados sin facturar"],
+            ["Producción propia","SKU;Prod_pend_S;Prod_S+1","Pedido pendiente S y confirmado S+1"],
+            ["Órdenes de compra","SKU;Cantidad_pendiente","Solo artículos de reventa"],
+            ["Forecast","SKU;S_actual;S+1;S+2","Tres semanas en un archivo"],
+          ]}/>
 
-          <H3>Forecast (pestaña Forecast)</H3>
-          <Formula>
-            SKU;S_actual;S+1;S+2{"\n"}
-            13;13486;14200;13900{"\n"}
-            9;3757;3900;3800{"\n"}
-            ...
-          </Formula>
-          <P>Una fila por SKU. Las tres semanas en un mismo archivo. Al importar, se pisan todos los valores del forecast para los SKUs incluidos.</P>
+          <H3>SKUs no encontrados</H3>
+          <P>Si un SKU del archivo no está en el Maestro, sus datos no se cargan y aparece en la lista de "no encontrados". Podés descargar esa lista en CSV para gestionarla.</P>
 
-          <H3>Producción (pestaña Producción)</H3>
-          <Formula>
-            SKU;Prod_pend_S;Prod_S+1{"\n"}
-            13;8500;12000{"\n"}
-            9;2800;3500{"\n"}
-            ...
-          </Formula>
-          <P><Tag>Prod pend S</Tag> es lo que planta planifica producir en los días restantes de la semana actual. <Tag>Prod S+1</Tag> es el planificación de abastecimiento para la semana siguiente, confirmado con planta.</P>
-
-          <H3>Producción acumulada</H3>
-          <P>Por ahora se carga manualmente celda a celda en la tabla de la pestaña Producción. En una etapa futura se conectará directamente con SAP.</P>
-
-          <H3>Datos de SAP (stock, ventas, pedidos)</H3>
-          <P>Por ahora se cargan manualmente en la tabla de Plan & Estado. En una etapa futura se automatizará la descarga desde SAP a una carpeta y la importación se realizará con un botón.</P>
+          <H3>Sesión</H3>
+          <P>Usá <strong>💾 Guardar sesión</strong> antes de cerrar la app para guardar todos los datos cargados (maestro, datos operativos, configuración) en un archivo JSON. Al volver, usá <strong>📂 Cargar sesión</strong> para restaurar todo el estado.</P>
         </>}
 
         {seccion==="maestro"&&<>
           <H2>Maestro de artículos</H2>
-          <P>El maestro centraliza los parámetros de cada SKU. Hay dos niveles de acceso:</P>
-          <Tabla
-            headers={["Rol","Puede hacer"]}
-            rows={[
-              ["🔐 Admin","Ver y editar todos los campos, agregar y eliminar artículos, modificar la política de stock"],
-              ["📋 Planificación","Ver todos los datos. No puede modificar parámetros marcados con 🔐"],
-            ]}
-          />
+          <Tabla headers={["Rol","Puede hacer"]} rows={[
+            ["🔐 Admin","Ver todo, editar TER/SS/Tipo plan, agregar y eliminar artículos, modificar alertas de stock"],
+            ["👤 User","Ver todos los datos y exportar CSV. No puede modificar parámetros."],
+          ]}/>
 
-          <H3>Campos del artículo</H3>
-          <Tabla
-            headers={["Campo","Descripción","Impacto en cálculos","Admin"]}
-            rows={[
-              ["SKU","Código del artículo en SAP","Clave de cruce con todos los datos importados","No"],
-              ["Descripción","Nombre del producto","Visual","No"],
-              ["Pasta","Código del semielaborado o pieza base","Agrupación en Nivel 2 (Semielaborados)","Sí 🔐"],
-              ["Familia","Agrupación comercial","Filtros y reportes","No"],
-              ["Sector","Sector productivo","Desglose en Forecast y Producción","No"],
-              ["Vida útil (días)","VU total desde elaboración","Define stock objetivo y umbrales de alerta","Sí 🔐"],
-              ["Kg/Batch","Tamaño del batch de producción","Referencia para la propuesta de producción","Sí 🔐"],
-              ["Kg/Batch mínimo","Batch mínimo operable","Cantidad mínima para iniciar producción","Sí 🔐"],
-              ["Lead time (días)","Días entre pedido y disponibilidad","Planificación de semielaborados (Fase 2)","Sí 🔐"],
-              ["Acumula demanda","Si la demanda no atendida se suma al fcst S+1","Activa el arrastre cuando el toggle está encendido","Sí 🔐"],
-            ]}
-          />
+          <H3>Campos de SAP — solo lectura</H3>
+          <Tabla headers={["Campo","Descripción"]} rows={[
+            ["SKU","Código del artículo en SAP"],
+            ["Descripción / Sector / Pasta / Familia / Subfamilia","Datos descriptivos"],
+            ["Vida útil (días)","VU total desde elaboración — define umbrales de alerta"],
+            ["TME (días)","Tiempo mínimo de entrega exigido por el cliente — define stock máximo"],
+            ["Leadtime (días)","Días entre pedido y disponibilidad — define stock mínimo"],
+            ["Batch (kg) / Batch mín (kg)","Tamaños de lote de producción — definen el redondeo del pedido sugerido"],
+            ["Peso/un (kg) / Batch (un)","Datos informativos"],
+            ["Vacío / Reventa","Tipo de producto"],
+          ]}/>
 
-          <H3>Agregar y eliminar artículos</H3>
-          <P>En modo Admin, el botón <strong>+ Artículo</strong> abre el formulario de alta. Para eliminar, seleccioná uno o varios artículos con el checkbox y usá el botón <strong>− Artículo(s)</strong>. Se pide confirmación antes de eliminar.</P>
+          <H3>Parámetros configurables en la app</H3>
+          <Tabla headers={["Campo","Descripción","Default"]} rows={[
+            ["TER (días)","Tiempo entre reposiciones — define stock objetivo","7d producción / 15d reventa"],
+            ["SS (días)","Stock de seguridad — acepta decimales (ej: 0,5)","0d producción / 7d reventa"],
+            ["Tipo de plan","Stock / Frescos / Contra pedido — define el tipo de planificación","Stock"],
+          ]}/>
 
-          <H3>Política de stock</H3>
-          <P>Los umbrales de la política se editan directamente en la tabla de la sección "Política de stock" dentro del Maestro (solo en modo Admin). El campo "Hasta" de cada franja es editable; el "Desde" se actualiza automáticamente como el "Hasta" de la franja anterior.</P>
+          <H3>Alertas en el Maestro</H3>
+          <P><strong>OBJ+SS vs TME (%)</strong> = (TER + SS) / TME × 100. Si supera el 100% significa que los parámetros TER y/o SS son demasiado altos para el TME configurado — hay que bajarlos o revisar el TME con SAP.</P>
+          <P><strong>Stk mín</strong> = leadtime + SS días. <strong>Stk máx</strong> = TME días. Ambos se muestran en la tabla como referencia.</P>
         </>}
       </div>
     </div>
