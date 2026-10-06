@@ -1395,7 +1395,10 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
         <FiltroDropdown label="Estado" filtro={filtroEstado} setter={setFiltroEstado}
           opciones={Object.entries(POLITICA_DEFAULT).map(([k,v])=>({val:k,label:v.label,color:v.color,bg:v.bg,border:v.border}))}/>
         <FiltroDropdown label="Tipo plan" filtro={filtroTipoPlan} setter={setFiltroTipoPlan}
-          opciones={[{val:"Stock",color:"#475569"},{val:"Frescos",color:"#15803d"},{val:"Contra pedido",color:"#92400e"}]}/>
+          opciones={[...new Set(maestro.map(a=>a.tipoPlan||"Stock"))].sort().map(t=>({
+            val:t,
+            color:t==="Frescos"?"#15803d":t==="Contra pedido"?"#92400e":t==="Feteados"?"#0891b2":"#475569"
+          }))}/>
         <FiltroDropdown label="Origen" filtro={filtroReventa} setter={setFiltroReventa}
           opciones={[{val:"Propio",color:"#475569"},{val:"Reventa",color:"#1d4ed8"}]}/>
         <FiltroDropdown label="Vacío" filtro={filtroVacio} setter={setFiltroVacio}
@@ -2248,6 +2251,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                   padding:"6px 10px",borderRadius:5,fontSize:12,outline:"none"}}>
                 <option value="Stock">Stock</option>
                 <option value="Frescos">Frescos</option>
+                <option value="Feteados">Feteados</option>
                 <option value="Contra pedido">Contra pedido</option>
               </select>
             </label>
@@ -2367,9 +2371,12 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                     {rol==="admin"?(
                       <select value={art.tipoPlan||"Stock"} onChange={e=>{const c=[...maestro];c[realIdx]={...c[realIdx],tipoPlan:e.target.value};setMaestro(c);}}
                         style={{background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"2px 6px",borderRadius:4,fontSize:11,outline:"none"}}>
-                        <option value="Stock">Stock</option><option value="Frescos">Frescos</option><option value="Contra pedido">Contra pedido</option>
+                        <option value="Stock">Stock</option><option value="Frescos">Frescos</option><option value="Feteados">Feteados</option><option value="Contra pedido">Contra pedido</option>
                       </select>
-                    ):<span style={{background:art.tipoPlan==="Frescos"?"#f0fdf4":art.tipoPlan==="Contra pedido"?"#fef3c7":"#f8fafc",color:art.tipoPlan==="Frescos"?"#15803d":art.tipoPlan==="Contra pedido"?"#92400e":"#64748b",padding:"2px 7px",borderRadius:3,fontSize:10,fontWeight:600}}>{art.tipoPlan||"Stock"}</span>}
+                    ):<span style={{
+                      background:art.tipoPlan==="Frescos"?"#f0fdf4":art.tipoPlan==="Contra pedido"?"#fef3c7":art.tipoPlan==="Feteados"?"#f0f9ff":"#f8fafc",
+                      color:art.tipoPlan==="Frescos"?"#15803d":art.tipoPlan==="Contra pedido"?"#92400e":art.tipoPlan==="Feteados"?"#0369a1":"#64748b",
+                      padding:"2px 7px",borderRadius:3,fontSize:10,fontWeight:600}}>{art.tipoPlan||"Stock"}</span>}
                   </Tv>
                   {/* VACÍO */}
                   <Tv>{art.vacio?<span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>:<span style={{color:C.muted,fontSize:10}}>No</span>}</Tv>
@@ -2755,15 +2762,16 @@ function PanelInstructivo() {
             ["TME (días)","Tiempo mínimo de entrega exigido por el cliente — define stock máximo"],
             ["Leadtime (días)","Días entre pedido y disponibilidad — define stock mínimo"],
             ["Batch (kg) / Batch mín (kg)","Tamaños de lote de producción — definen el redondeo del pedido sugerido"],
-            ["Peso/un (kg) / Batch (un)","Datos informativos"],
-            ["Vacío / Reventa","Tipo de producto"],
+            ["Peso/un (kg) / Batch (un)","Datos informativos de presentación"],
+            ["Vacío","Si el producto se envasa al vacío"],
+            ["Reventa","Si el producto es de terceros (no producción propia)"],
           ]}/>
 
           <H3>Parámetros configurables en la app</H3>
           <Tabla headers={["Campo","Descripción","Default"]} rows={[
             ["TER (días)","Tiempo entre reposiciones — define stock objetivo","7d producción / 15d reventa"],
             ["SS (días)","Stock de seguridad — acepta decimales (ej: 0,5)","0d producción / 7d reventa"],
-            ["Tipo de plan","Stock / Frescos / Contra pedido — define el tipo de planificación","Stock"],
+            ["Tipo de plan","Stock / Frescos / Feteados / Contra pedido — define el tipo de planificación","Stock"],
           ]}/>
 
           <H3>Alertas en el Maestro</H3>
