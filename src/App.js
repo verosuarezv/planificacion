@@ -557,14 +557,18 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const permiteArrastre = art.permiteArrastre !== false && (art.vidaUtil > 12);
   const arrastre   = (conArrastre && permiteArrastre)
     ? Math.max(0, fcstPend - Math.max(0, stkCierreS)) : 0;
-  const fcstS2v    = fcstS2base + arrastre;
+  // Si usarPromedio: reemplazar fcstS2 por promedio de S, S+1 y S+2
+  const fcstS3raw  = fcstS3[art.sku] || 0;
+  const fcstPromedio = Math.round(((fcst || 0) + fcstS2base + fcstS3raw) / 3);
+  const fcstS2eff  = usarPromedio ? fcstPromedio : fcstS2base;
+  const fcstS2v    = fcstS2eff + arrastre;
 
   // Días stock cierre S: medido contra fcst S+1 (es lo que el stock tiene que cubrir)
   const diasS    = calcDias(Math.max(0, stkCierreS), fcstS2v);
   const estadoS  = getEstado(diasS, vu, fcstS2v, diasMin, diasObj, diasMax);
 
   // ── PEDIDO SUGERIDO S+1 ──
-  const fcstS3v   = fcstS3[art.sku] || 0;
+  const fcstS3v   = usarPromedio ? fcstPromedio : fcstS3raw;
   const demDiaria = fcstS2v / 7;
 
   // Umbrales en kg
@@ -1275,11 +1279,13 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
   pedidosPend, setPedidosPend, prodAcum, setProdAcum,
   prodPend, setProdPend, prodS2, setProdS2 }) {
 
-  const [filtroSector,   setFiltroSector]   = useState(new Set());
-  const [filtroEstado,   setFiltroEstado]   = useState(new Set());
-  const [filtroReventa,  setFiltroReventa]  = useState(new Set());
-  const [filtroVacio,    setFiltroVacio]    = useState(new Set());
-  const [filtroTipoPlan, setFiltroTipoPlan] = useState(new Set());
+  const [filtroSector,      setFiltroSector]      = useState(new Set());
+  const [filtroEstado,      setFiltroEstado]      = useState(new Set());
+  const [filtroEstadoS,     setFiltroEstadoS]     = useState(new Set());
+  const [filtroEstadoS2,    setFiltroEstadoS2]    = useState(new Set());
+  const [filtroReventa,     setFiltroReventa]     = useState(new Set());
+  const [filtroVacio,       setFiltroVacio]       = useState(new Set());
+  const [filtroTipoPlan,    setFiltroTipoPlan]    = useState(new Set());
 
   function toggleFiltro(setter, valor) {
     setter(prev => {
@@ -1302,14 +1308,16 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
 
   const rowsFilt = rows.filter(r=>{
     const sOk = filtroSector.size===0   || filtroSector.has(r.art.sector);
-    const eOk = filtroEstado.size===0   || filtroEstado.has(r.estadoActual);
+    const eOk  = filtroEstado.size===0    || filtroEstado.has(r.estadoActual);
+    const eSok = filtroEstadoS.size===0   || filtroEstadoS.has(r.estadoS);
+    const eS2ok= filtroEstadoS2.size===0  || filtroEstadoS2.has(r.estadoS2);
     const tOk = filtroTipoPlan.size===0 || filtroTipoPlan.has(r.art.tipoPlan||"Stock");
     const rOk = filtroReventa.size===0  || filtroReventa.has(r.art.reventa?"Reventa":"Propio");
     const vOk = filtroVacio.size===0    || filtroVacio.has(r.art.vacio?"Si":"No");
     const bOk = !buscar.trim() ||
       r.art.sku.toLowerCase().includes(buscar.toLowerCase()) ||
       r.art.desc.toLowerCase().includes(buscar.toLowerCase());
-    return sOk&&eOk&&rOk&&vOk&&tOk&&bOk;
+    return sOk&&eOk&&eSok&&eS2ok&&rOk&&vOk&&tOk&&bOk;
   }).sort((a,b)=>{
     const d = orden.dir==="asc" ? 1 : -1;
     if (orden.col==="sku")      return d * String(a.art.sku).localeCompare(String(b.art.sku), undefined, {numeric:true});
@@ -1325,7 +1333,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
     if (orden.col==="diasS2")   return d * ((isNaN(a.diasS2)||a.diasS2===999?9999:a.diasS2) - (isNaN(b.diasS2)||b.diasS2===999?9999:b.diasS2));
     if (orden.col==="estado") {
       const ord = ["faltante","substockAlerta","sinForecast","ok","sobrestockAlerta","sobrestockRiesgo"];
-      return d * ((ord.indexOf(a.estadoActual)===-1?3:ord.indexOf(a.estadoActual)) - (ord.indexOf(b.estadoActual)===-1?3:ord.indexOf(b.estadoActual)));
+      return d * ((ord.indexOf(a.estadoS)===-1?3:ord.indexOf(a.estadoS)) - (ord.indexOf(b.estadoS)===-1?3:ord.indexOf(b.estadoS)));
     }
     return 0;
   });
@@ -1392,7 +1400,11 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
         {/* ── Dropdowns multi-selección ── */}
         <FiltroDropdown label="Sector" filtro={filtroSector} setter={setFiltroSector}
           opciones={sectores.slice(1).map(s=>({val:s, color:(SECTOR_COLOR[s]||{color:"#64748b"}).color, bg:(SECTOR_COLOR[s]||{bg:"#f8fafc"}).bg}))}/>
-        <FiltroDropdown label="Estado" filtro={filtroEstado} setter={setFiltroEstado}
+        <FiltroDropdown label="Est. actual" filtro={filtroEstado} setter={setFiltroEstado}
+          opciones={Object.entries(POLITICA_DEFAULT).map(([k,v])=>({val:k,label:v.label,color:v.color,bg:v.bg,border:v.border}))}/>
+        <FiltroDropdown label="Est. cierre S" filtro={filtroEstadoS} setter={setFiltroEstadoS}
+          opciones={Object.entries(POLITICA_DEFAULT).map(([k,v])=>({val:k,label:v.label,color:v.color,bg:v.bg,border:v.border}))}/>
+        <FiltroDropdown label="Est. S+1" filtro={filtroEstadoS2} setter={setFiltroEstadoS2}
           opciones={Object.entries(POLITICA_DEFAULT).map(([k,v])=>({val:k,label:v.label,color:v.color,bg:v.bg,border:v.border}))}/>
         <FiltroDropdown label="Tipo plan" filtro={filtroTipoPlan} setter={setFiltroTipoPlan}
           opciones={[...new Set(maestro.map(a=>a.tipoPlan||"Stock"))].sort().map(t=>({
@@ -1556,7 +1568,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                       {art.desc}
                     </div>
                     <div style={{fontSize:9,color:C.muted,marginTop:1}}>
-                      VU {art.vidaUtil}d · obj {diasObj}d{diasMax!=null?` · máx ${diasMax}d`:""}
+                      VU {art.vidaUtil}d · TME {diasMax!=null?`${diasMax}d`:"—"} · obj {diasObj}d · TER {art.ter||7}d · SS {art.segDias||0}d
                     </div>
                   </td>
 
@@ -3102,7 +3114,7 @@ export default function App() {
                  prodAcum, prodPend, prodS2, conArrastre:false };
   const rows = maestro.map(art=>({ art, ...calcRow(art, ctx0) }));
 
-  const alertasTotal = rows.filter(r=>["faltante","substockAlerta"].includes(r.estadoActual)).length;
+  const alertasTotal = rows.filter(r=>["faltante","substockAlerta"].includes(r.estadoS)).length;
 
   const tabs = [
     { id:"plan",  label:"Plan & Estado" },
@@ -3127,7 +3139,7 @@ export default function App() {
               const start = new Date(now.getFullYear(), 0, 1);
               const wk = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
               return `Semana S${wk}/${now.getFullYear()}`;
-            })()}
+            })()} · <span style={{color:C.accent,fontWeight:600}}>v62</span>
           </div>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
