@@ -60,9 +60,10 @@ function getEstado(diasStock, vidaUtil, fcst, diasMin, diasObj, diasMax) {
   if (diasStock <= 0) return "faltante";
   // Si tenemos parámetros configurados, usarlos
   if (diasMin != null && diasObj != null) {
+    const diasMinEfectivo = Math.min(diasMin, diasObj); // min nunca puede superar el objetivo
     if (diasMax != null && diasStock > diasMax) return "sobrestockRiesgo";
-    if (diasStock > diasObj) return "sobrestockAlerta";
-    if (diasStock >= diasMin) return "ok";
+    if (diasStock >= diasObj * 1.1) return "sobrestockAlerta";
+    if (diasStock >= diasMinEfectivo) return "ok";
     if (diasStock > 0) return "substockAlerta";
     return "faltante";
   }
@@ -368,20 +369,30 @@ const Ti = ({children,right})=>(
 );
 
 // Input editable — ancho uniforme
-const Inp = ({value,onChange,width=64})=>(
-  <input type="number" value={Math.round(value)||0} min={0}
-    onChange={e=>onChange(Math.max(0,+e.target.value))}
+const Inp = ({value,onChange,width=64})=>{
+  const [local,setLocal] = React.useState(String(Math.round(value)||0));
+  React.useEffect(()=>{ setLocal(String(Math.round(value)||0)); },[value]);
+  const commit = (val) => { const v=+val; const n=isNaN(v)?0:Math.max(0,Math.round(v)); setLocal(String(n)); onChange(n); };
+  return <input type="number" value={local} min={0}
+    onChange={e=>setLocal(e.target.value)}
+    onBlur={e=>commit(e.target.value)}
+    onKeyDown={e=>{ if(e.key==="Enter") commit(e.target.value); }}
     style={{width,padding:"3px 6px",border:`1px solid ${C.inputBorder}`,
       borderRadius:5,background:C.inputBg,color:C.text,fontSize:12,
-      textAlign:"center",outline:"none",fontFamily:"inherit"}}/>
-);
-const InpDec = ({value,onChange,width=64,step=0.5})=>(
-  <input type="number" value={value??0} min={0} step={step}
-    onChange={e=>onChange(Math.max(0,+e.target.value))}
+      textAlign:"center",outline:"none",fontFamily:"inherit"}}/>;
+};
+const InpDec = ({value,onChange,width=64,step=0.5})=>{
+  const [local,setLocal] = React.useState(String(value??0));
+  React.useEffect(()=>{ setLocal(String(value??0)); },[value]);
+  const commit = (val) => { const v=+val; const n=isNaN(v)?0:Math.max(0,v); setLocal(String(n)); onChange(n); };
+  return <input type="number" value={local} min={0} step={step}
+    onChange={e=>setLocal(e.target.value)}
+    onBlur={e=>commit(e.target.value)}
+    onKeyDown={e=>{ if(e.key==="Enter") commit(e.target.value); }}
     style={{width,padding:"3px 6px",border:`1px solid ${C.inputBorder}`,
       borderRadius:5,background:C.inputBg,color:C.text,fontSize:12,
-      textAlign:"center",outline:"none",fontFamily:"inherit"}}/>
-);
+      textAlign:"center",outline:"none",fontFamily:"inherit"}}/>;
+};
 
 // Valor de solo lectura con hint debajo
 const Val = ({v,hint,color,bold})=>(
@@ -458,12 +469,13 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
   );
 
   const chips = (alertas) => (
-    <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
+    <div style={{display:"flex",gap:4,flexWrap:"nowrap",alignItems:"center"}}>
       {Object.entries(POLITICA_DEFAULT).map(([k,v])=>{
         const cnt=alertas[k]||0;
-        return cnt>0?<span key={k} style={{background:v.bg,color:v.color,border:`1px solid ${v.border}`,padding:"1px 7px",borderRadius:10,fontSize:10,fontWeight:600}}>{cnt} {v.label}</span>:null;
+        return <span key={k} style={{background:v.bg,color:v.color,border:`1px solid ${v.border}`,
+          padding:"1px 7px",borderRadius:10,fontSize:10,fontWeight:600,whiteSpace:"nowrap",
+          opacity:cnt===0?0.45:1}}>{cnt} {v.label}</span>;
       })}
-      {Object.values(alertas).every(v=>!v)&&<span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>✓ Sin alertas</span>}
     </div>
   );
 
@@ -474,7 +486,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
         {fila("Stock actual",`${fmt(totStkActual)} kg`,null,true)}
         {fila("Cierre S",`${fmt(totStkCierreS)} kg`)}
         {fila("Cierre S+1",`${fmt(totStkCierreS2)} kg`)}
-      </>)}
+      </>,140)}
 
       {/* VENTA */}
       {grupo("Venta","#2563eb",<>
@@ -482,7 +494,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
         {barra(pctAcum,"#2563eb")}
         {fila("Facturado acum.",`${fmt(totAcum)} kg`,`${pctAcum}% del fcst`)}
         {fila("Fcst S+1",`${fmt(fcstS2Total)} kg`)}
-      </>)}
+      </>,160)}
 
       {/* PEDIDO */}
       {grupo("Pedido","#7c3aed",<>
@@ -490,10 +502,13 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
         {barra(pctProdAcum,"#7c3aed")}
         {fila("Ped. acum. S",`${fmt(totProdAcum)} kg`,`${pctProdAcum}% del plan`)}
         {fila("Pedido sugerido S+1",`${fmt(totProdOptS2)} kg`)}
-      </>)}
+      </>,160)}
 
       {/* ALERTAS DE STOCK */}
-      {grupo("Alertas de stock","#dc2626",<>
+      <div style={{background:C.surface,border:`1px solid ${C.hairline}`,borderRadius:10,
+        padding:"12px 16px",flex:2,minWidth:320,borderTop:`3px solid #dc2626`}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#dc2626",letterSpacing:"0.08em",
+          textTransform:"uppercase",marginBottom:10}}>Alertas de stock</div>
         <div style={{marginBottom:8}}>
           <div style={{fontSize:9,color:C.muted,marginBottom:4}}>Semana S</div>
           {chips(alertasS)}
@@ -502,7 +517,7 @@ function KpiPanel({totFcst,totAcum,totProdS,totProdAcum,totProdOptS2,fcstS2Total
           <div style={{fontSize:9,color:C.muted,marginBottom:4}}>Semana S+1</div>
           {chips(alertasS2)}
         </div>
-      </>,220)}
+      </div>
     </div>
   );
 }
@@ -523,7 +538,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const ter      = art.ter || (art.reventa ? 15 : 7);
 
   // Umbrales en días
-  const diasMin  = leadTime + ss;              // punto de pedido = leadtime + SS
+  const diasMin  = leadTime + ss;              // punto de reorden = leadTime + SS
   const diasObj  = ter + ss;                   // stock objetivo = TER + SS
   const diasMax  = tme > 0 ? tme : null; // stock máximo = TME × demanda (límite duro)
   const pctObj   = vu > 0 ? diasObj / vu : 0.20;
@@ -586,12 +601,24 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   let prodOptS2 = 0;
   if (necesidad > 0) {
     const kgBatch = art.kgBatch || kgBatchMin;
+    const stkObjMaxKg = demDiaria * diasObj * 1.1; // techo OK = diasObj × 1.1
     // 1. Redondear al batch completo hacia arriba
     prodOptS2 = Math.ceil(necesidad / kgBatch) * kgBatch;
-    // 2. Si supera stock máximo → redondear batch completo hacia abajo
+    // 2. Si el stock CIERRE S+1 supera diasObj×1.1 → bajar un batch completo (floor)
+    if ((stkCierreSPos + prodOptS2 - fcstS2v) > stkObjMaxKg) {
+      const prodFloor = Math.max(0, prodOptS2 - kgBatch);
+      const stkCierreFloor = stkCierreSPos + prodFloor - fcstS2v;
+      // 3. Si al bajar un batch queda con substock → sumar un batch mínimo encima
+      if (stkCierreFloor < stkMinKg && kgBatchMin > 0) {
+        prodOptS2 = prodFloor + kgBatchMin;
+      } else {
+        prodOptS2 = prodFloor;
+      }
+      prodOptS2 = Math.max(0, prodOptS2);
+    }
+    // 4. Si supera stock máximo (TME) → redondear hacia abajo respetando TME
     if (stkMaxKg != null && (stkCierreSPos + prodOptS2) > stkMaxKg) {
       prodOptS2 = Math.floor((stkMaxKg - stkCierreSPos) / kgBatch) * kgBatch;
-      // 3. Si queda por debajo del stock mínimo → usar batch mínimo
       if (prodOptS2 < stkMinKg && kgBatchMin > 0) {
         prodOptS2 = kgBatchMin;
       }
@@ -602,8 +629,9 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   // Alerta batch: si stkDisponible + batch mínimo supera el stock máximo (TME - SS)
   const alertaMax = stkMaxKg != null && (stkCierreSPos + kgBatchMin) > stkMaxKg;
 
-  const prodS2val = (prodS2[art.sku] !== undefined && prodS2[art.sku] !== null)
-    ? (prodS2[art.sku] || 0)
+  const _ps2 = prodS2[art.sku];
+  const prodS2val = (_ps2 !== undefined && _ps2 !== null && Number.isFinite(+_ps2))
+    ? +_ps2
     : prodOptS2;
 
   // ── STOCK CIERRE S+1 ──
@@ -619,7 +647,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
     stkCierreS, diasS, estadoS,
     fcstS3v,
     fcstS2v, arrastre,
-    prodOptS2, prodS2val,
+    necesidad, prodOptS2, prodS2val,
     stkCierreS2, diasS2, estadoS2,
     diasMin, diasObj, diasMax, stkMinKg, stkObjKg, stkMaxKg,
     tme, alertaTME, alertaMax, pctObj, demDiaria,
@@ -1277,15 +1305,11 @@ function FiltroDropdown({ label, opciones, filtro, setter }) {
 function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcstS3,
   stockActual, setStockActual, ventaAcum, setVentaAcum,
   pedidosPend, setPedidosPend, prodAcum, setProdAcum,
-  prodPend, setProdPend, prodS2, setProdS2 }) {
-
-  const [filtroSector,      setFiltroSector]      = useState(new Set());
-  const [filtroEstado,      setFiltroEstado]      = useState(new Set());
-  const [filtroEstadoS,     setFiltroEstadoS]     = useState(new Set());
-  const [filtroEstadoS2,    setFiltroEstadoS2]    = useState(new Set());
-  const [filtroReventa,     setFiltroReventa]     = useState(new Set());
-  const [filtroVacio,       setFiltroVacio]       = useState(new Set());
-  const [filtroTipoPlan,    setFiltroTipoPlan]    = useState(new Set());
+  prodPend, setProdPend, prodS2, setProdS2,
+  filtroSector, setFiltroSector, filtroEstado, setFiltroEstado,
+  filtroEstadoS, setFiltroEstadoS, filtroEstadoS2, setFiltroEstadoS2,
+  filtroReventa, setFiltroReventa, filtroVacio, setFiltroVacio,
+  filtroTipoPlan, setFiltroTipoPlan, buscar, setBuscar }) {
 
   function toggleFiltro(setter, valor) {
     setter(prev => {
@@ -1294,7 +1318,6 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
       return next;
     });
   }
-  const [buscar, setBuscar]             = useState("");
   const [orden, setOrden]               = useState({ col:"desc", dir:"asc" });
   const [mostrarS2, setMostrarS2]       = useState(true);
   const [conArrastre, setConArrastre]   = useState(false);
@@ -1425,7 +1448,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
             background:conArrastre?"#fff7ed":"transparent",
             border:`1px solid ${conArrastre?"#fed7aa":C.border}`}}>
             <input type="checkbox" checked={conArrastre} onChange={e=>setConArrastre(e.target.checked)}/>
-            Acumula demanda no atendida en S+1
+            Acum. demanda no atendida
           </label>
         )}
         {mostrarS2&&(
@@ -1434,20 +1457,18 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
             background:usarPromedio?C.accentDim:"transparent",
             border:`1px solid ${usarPromedio?C.accent:C.border}`}}>
             <input type="checkbox" checked={usarPromedio} onChange={e=>setUsarPromedio(e.target.checked)}/>
-            Venta promedio S/S+1/S+2
+            Vta prom S - S+2
           </label>
         )}
         {mostrarS2&&(
           <button onClick={()=>{
-            if(window.confirm("¿Resetear la producción S+1 de todos los artículos al valor automático calculado?")) {
-              setProdS2(p => {
-                const nuevo = {...p};
-                maestro.forEach(a => { delete nuevo[a.sku]; });
-                return nuevo;
-              });
-            }
+            setProdS2(p => {
+              const nuevo = {...p};
+              maestro.forEach(a => { delete nuevo[a.sku]; });
+              return nuevo;
+            });
           }}
-            style={{background:"#f0fdf4",border:`1px solid #bbf7d0`,color:"#15803d",
+            style={{background:"#f0f4ff",border:`1px solid #c7d2fe`,color:"#4338ca",
               padding:"5px 12px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:600}}>
             ↺ Reset todos a automático
           </button>
@@ -1517,8 +1538,9 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
               ))}
               {mostrarS2&&<>
                 <Th right>Fcst S+1</Th>
-                {[["Ped. S+1","prodS2val"],["Pedido sugerido",null]].map(([lbl,col])=>(
-                  <Th key={lbl} right style={{cursor:col?"pointer":"default",userSelect:"none"}}
+                <Th right style={{cursor:"default",userSelect:"none",color:C.muted}}>Necesidad</Th>
+                {[["Ped. S+1","prodS2val"]].map(([lbl,col])=>(
+                  <Th key={lbl} right style={{cursor:col?"pointer":"default",userSelect:"none",width:90,minWidth:90}}
                     onClick={col?()=>toggleOrden(col):undefined}>
                     {lbl}{col?sortIcon(col):""}
                   </Th>
@@ -1538,7 +1560,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
               fcst,factAcum,pedidos,fcstPend,
               pAcum,pPend,
               stkCierreS,diasS,estadoS,
-              fcstS2v,fcstS3v,arrastre,prodOptS2,prodS2val,
+              fcstS2v,fcstS3v,arrastre,necesidad,prodOptS2,prodS2val,
               stkCierreS2,diasS2,estadoS2,
               diasMin,diasObj,diasMax,stkMinKg,stkObjKg,stkMaxKg,alertaTME,alertaMax,pctObj,demDiaria})=>{
 
@@ -1568,7 +1590,7 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                       {art.desc}
                     </div>
                     <div style={{fontSize:9,color:C.muted,marginTop:1}}>
-                      VU {art.vidaUtil}d · TME {diasMax!=null?`${diasMax}d`:"—"} · obj {diasObj}d · TER {art.ter||7}d · SS {art.segDias||0}d
+                      VU {art.vidaUtil}d · TME {diasMax!=null?`${diasMax}d`:"—"} · obj {diasObj}d · TER {art.ter||7}d · SS {art.segDias||0}d · Batch {fmt(art.kgBatch||art.kgBatchMin||500)}kg
                     </div>
                   </td>
 
@@ -1636,24 +1658,27 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                       <Val v={fcstS2v} hint={arrastre>0?`+${fmt(arrastre)} arr.`:null}/>
                     </Tv>
 
-                    {/* Prod S+1 — editable, por defecto = pedido sugerido calculado */}
-                    <Ti right>
-                      <Inp value={Math.round(prodS2val)} width={75}
-                        onChange={v=>setProdS2(p=>({...p,[art.sku]:v}))}/>
-                      {alertaMax&&<div style={{fontSize:9,color:"#b91c1c",fontWeight:700,textAlign:"center",marginTop:1}}
-                        title="Batch mínimo supera stock máximo (TME)">⚠ sup. máx.</div>}
-                      {!alertaMax&&(prodS2[art.sku]===undefined||prodS2[art.sku]===null)
-                        ? <div style={{fontSize:9,color:C.accent,textAlign:"center",marginTop:1}}>auto</div>
-                        : !alertaMax&&<div style={{fontSize:9,color:C.muted,textAlign:"center",marginTop:1,cursor:"pointer"}}
-                            onClick={()=>setProdS2(p=>({...p,[art.sku]:undefined}))}>
-                            ↺ reset
-                          </div>}
-                    </Ti>
-                    {/* Óptima — referencia chica */}
+                    {/* Necesidad — solo lectura, sin redondeo de batch */}
                     <Tv right>
-                      <span style={{fontSize:10,color:C.muted}}>{fmt(prodOptS2)}</span>
+                      <span style={{fontSize:11,color:necesidad>0?C.text:C.muted}}>
+                        {necesidad>0 ? fmt(Math.round(necesidad)) : "—"}
+                      </span>
                     </Tv>
 
+                    {/* Prod S+1 — editable, por defecto = pedido sugerido calculado */}
+                    <td style={{padding:"3px 4px",textAlign:"center",width:90,minWidth:90}}>
+                      <Inp value={Math.round(prodS2val)} width={54}
+                        onChange={v=>setProdS2(p=>({...p,[art.sku]:v}))}/>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,marginTop:1}}>
+                        {(prodS2[art.sku]===undefined||prodS2[art.sku]===null)
+                          ? <span style={{fontSize:9,color:C.accent}}>auto</span>
+                          : <span style={{fontSize:9,color:C.muted,cursor:"pointer"}}
+                              onClick={()=>setProdS2(p=>({...p,[art.sku]:undefined}))}>↺ reset</span>}
+                        {alertaMax&&necesidad>0&&prodS2val===(art.kgBatchMin||500)&&
+                          <span style={{fontSize:9,color:"#b91c1c",fontWeight:700}}
+                            title="Batch mínimo supera stock máximo (TME)">⚠ batch</span>}
+                      </div>
+                    </td>
                     {/* Stock cierre S+1 */}
                     <Tv right style={sep}>
                       <span style={{color:stkCierreS2<0?"#b91c1c":C.text,fontWeight:stkCierreS2<0?600:400,fontSize:12}}>
@@ -1948,7 +1973,7 @@ function PanelSAP({ maestro, rows, politica }) {
                         <span style={{color:C.gProd,fontWeight:700}}>
                           {Math.round(r.prodOptS2).toLocaleString("es-UY")}
                         </span>
-                        {r.alertaMax&&<div style={{fontSize:9,color:"#b91c1c",fontWeight:700}}>⚠ sup. TME</div>}
+                        {r.alertaMax&&r.necesidad>0&&r.prodS2val===r.art.kgBatchMin&&<div style={{fontSize:9,color:"#b91c1c",fontWeight:700}}>⚠ batch</div>}
                       </Tv>
                       <Tv right dim>{r.art.kgBatch.toLocaleString("es-UY")}</Tv>
                     </tr>
@@ -2394,10 +2419,12 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                   <Tv>{art.vacio?<span style={{color:C.ok.color,fontSize:10,fontWeight:600}}>Sí</span>:<span style={{color:C.muted,fontSize:10}}>No</span>}</Tv>
                   {/* VU — solo lectura SAP */}
                   <Tv right><span style={{color:C.textDim,fontSize:11}}>{art.vidaUtil}</span></Tv>
-                  {/* TME — alerta si OBJ+SS > TME */}
+                  {/* TME — alerta si TER+SS > TME */}
                   {(()=>{
-                    const objTotal=(art.objDias||Math.round(art.vidaUtil*0.20))+(art.segDias||0);
-                    const alerta=art.tme>0&&objTotal>art.tme;
+                    const ter=art.ter||(art.reventa?15:7);
+                    const ss=art.segDias||0;
+                    const diasObj=ter+ss;
+                    const alerta=art.tme>0&&diasObj>art.tme;
                     return <Tv right><span style={{color:alerta?"#b91c1c":C.textDim,fontWeight:alerta?700:400}}>{art.tme||"—"}{alerta?" ⚠":""}</span></Tv>;
                   })()}
                   {/* TER — editable */}
@@ -2688,9 +2715,11 @@ function PanelInstructivo() {
           <H3>Pedido sugerido S+1</H3>
           <Formula>
             Necesidad = Fcst S+1 + Stock objetivo − Stock cierre S{"\n\n"}
-            1. Redondear al batch completo hacia ARRIBA{"\n"}
-            2. Si supera stock máximo → redondear batch completo hacia ABAJO{"\n"}
-            {"   "}→ Si el resultado es menor al stock mínimo → usar batch mínimo{"\n\n"}
+            1. Redondear necesidad al batch completo hacia ARRIBA{"\n"}
+            2. Si stock CIERRE S+1 resultante {">"} Stock objetivo × 1,1 → bajar un batch (floor){"\n"}
+            {"   "}→ Si al bajar un batch el stock cierre S+1 {"<"} Stock mínimo → sumar un batch mínimo{"\n"}
+            3. Si supera stock máximo (TME) → redondear hacia ABAJO respetando TME{"\n"}
+            {"   "}→ Si el resultado {"<"} Stock mínimo → usar batch mínimo{"\n\n"}
             ⚠ Alerta batch: si stock cierre S + batch mínimo {">"} stock máximo
           </Formula>
           <P>El pedido sugerido es la <strong>referencia calculada</strong>. El planner puede ajustarlo manualmente en la tabla.</P>
@@ -2725,16 +2754,18 @@ function PanelInstructivo() {
           <P>Los estados se calculan comparando los días de stock contra los parámetros de abastecimiento configurados en el Maestro (TER, SS, Leadtime, TME). Para Centenario, el TME equivale a la VU ya que el CD exige el 100% de VU restante al momento de la entrega.</P>
           <Tabla headers={["Estado","Color","Condición","Acción sugerida"]} rows={[
             [<Tag color="#6d28d9" bg="#f5f3ff">Riesgo Vto.</Tag>,"🟣 Violeta","Días de stock > Stock máximo (TME)","Frenar producción. Evaluar acciones comerciales."],
-            [<Tag color="#1d4ed8" bg="#eff6ff">Sobrestock</Tag>,"🔵 Azul","Stock objetivo < días ≤ Stock máximo","Reducir o eliminar producción esta semana."],
-            [<Tag color="#15803d" bg="#f0fdf4">OK</Tag>,"🟢 Verde","Stock mínimo ≤ días ≤ Stock objetivo","Pedido normal según sugerido."],
-            [<Tag color="#ca8a04" bg="#fefce8">Substock</Tag>,"🟡 Amarillo","0 < días < Stock mínimo","Priorizar pedido. Revisar plan S+1."],
+            [<Tag color="#1d4ed8" bg="#eff6ff">Sobrestock</Tag>,"🔵 Azul","Stock objetivo × 1,1 < días ≤ Stock máximo","Reducir o eliminar producción esta semana."],
+            [<Tag color="#15803d" bg="#f0fdf4">OK</Tag>,"🟢 Verde","Stock mínimo efectivo ≤ días ≤ Stock objetivo × 1,1","Pedido normal según sugerido."],
+            [<Tag color="#ca8a04" bg="#fefce8">Substock</Tag>,"🟡 Amarillo","0 < días < Stock mínimo efectivo","Priorizar pedido. Revisar plan S+1."],
             [<Tag color="#b91c1c" bg="#fef2f2">Faltante</Tag>,"🔴 Rojo","Días de stock = 0","Pedido urgente. Alertar a Comercial."],
             [<Tag color="#94a3b8" bg="#f8fafc">Sin forecast</Tag>,"⚪ Gris","Fcst = 0","Verificar con Comercial si el artículo sigue activo."],
           ]}/>
           <Formula>
-            Stock mínimo  = (Leadtime + SS) × demanda diaria{"\n"}
+            Stock mínimo efectivo = min(Leadtime + SS, TER + SS) × demanda diaria{"\n"}
+            {"  "}→ El mínimo nunca puede superar el objetivo (cuando Leadtime {">"} TER se igualan){"\n"}
             Stock objetivo = (TER + SS) × demanda diaria{"\n"}
-            Stock máximo  = TME × demanda diaria
+            Stock máximo  = TME × demanda diaria{"\n\n"}
+            Rango OK = [Stock mínimo efectivo, Stock objetivo × 1,1)
           </Formula>
           <P>Los umbrales de la política se configuran en <strong>Maestro → Alertas de stock</strong> (solo Admin).</P>
         </>}
@@ -3056,6 +3087,16 @@ export default function App() {
   const [prodPend, setProdPend]         = useState(PROD_PEND_INI);
   const [prodS2, setProdS2]             = useState(PROD_S2_INI);
 
+  // ── FILTROS PLAN (persisten entre pestañas) ──
+  const [filtroSector,   setFiltroSector]   = useState(new Set());
+  const [filtroEstado,   setFiltroEstado]   = useState(new Set());
+  const [filtroEstadoS,  setFiltroEstadoS]  = useState(new Set());
+  const [filtroEstadoS2, setFiltroEstadoS2] = useState(new Set());
+  const [filtroReventa,  setFiltroReventa]  = useState(new Set());
+  const [filtroVacio,    setFiltroVacio]    = useState(new Set());
+  const [filtroTipoPlan, setFiltroTipoPlan] = useState(new Set());
+  const [buscarPlan,     setBuscarPlan]     = useState("");
+
   // ── LOGS DE CARGA ──
   const LOG_INI = { stock:null, ventaAcum:null, pedidosPend:null, produccion:null, ordenes:null, forecast:null };
   const [logs, setLogs] = useState(LOG_INI);
@@ -3181,7 +3222,15 @@ export default function App() {
           pedidosPend={pedidosPend} setPedidosPend={setPedidosPend}
           prodAcum={prodAcum} setProdAcum={setProdAcum}
           prodPend={prodPend} setProdPend={setProdPend}
-          prodS2={prodS2} setProdS2={setProdS2}/>}
+          prodS2={prodS2} setProdS2={setProdS2}
+          filtroSector={filtroSector}     setFiltroSector={setFiltroSector}
+          filtroEstado={filtroEstado}     setFiltroEstado={setFiltroEstado}
+          filtroEstadoS={filtroEstadoS}   setFiltroEstadoS={setFiltroEstadoS}
+          filtroEstadoS2={filtroEstadoS2} setFiltroEstadoS2={setFiltroEstadoS2}
+          filtroReventa={filtroReventa}   setFiltroReventa={setFiltroReventa}
+          filtroVacio={filtroVacio}       setFiltroVacio={setFiltroVacio}
+          filtroTipoPlan={filtroTipoPlan} setFiltroTipoPlan={setFiltroTipoPlan}
+          buscar={buscarPlan}             setBuscar={setBuscarPlan}/>}
         {tab==="carga"&&<PanelCarga maestro={maestro}
           setStockActual={setStockActual}
           setVentaAcum={setVentaAcum} setPedidosPend={setPedidosPend}
