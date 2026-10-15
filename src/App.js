@@ -370,8 +370,8 @@ const Ti = ({children,right})=>(
 
 // Input editable — ancho uniforme
 const Inp = ({value,onChange,width=64})=>{
-  const [local,setLocal] = React.useState(String(Math.round(value)||0));
-  React.useEffect(()=>{ setLocal(String(Math.round(value)||0)); },[value]);
+  const [local,setLocal] = useState(String(Math.round(value)||0));
+  useEffect(()=>{ setLocal(String(Math.round(value)||0)); },[value]);
   const commit = (val) => { const v=+val; const n=isNaN(v)?0:Math.max(0,Math.round(v)); setLocal(String(n)); onChange(n); };
   return <input type="number" value={local} min={0}
     onChange={e=>setLocal(e.target.value)}
@@ -382,8 +382,8 @@ const Inp = ({value,onChange,width=64})=>{
       textAlign:"center",outline:"none",fontFamily:"inherit"}}/>;
 };
 const InpDec = ({value,onChange,width=64,step=0.5})=>{
-  const [local,setLocal] = React.useState(String(value??0));
-  React.useEffect(()=>{ setLocal(String(value??0)); },[value]);
+  const [local,setLocal] = useState(String(value??0));
+  useEffect(()=>{ setLocal(String(value??0)); },[value]);
   const commit = (val) => { const v=+val; const n=isNaN(v)?0:Math.max(0,v); setLocal(String(n)); onChange(n); };
   return <input type="number" value={local} min={0} step={step}
     onChange={e=>setLocal(e.target.value)}
