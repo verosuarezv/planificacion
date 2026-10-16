@@ -1,25 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" aria-labelledby="title desc" role="img">
-  <title id="title">Icono de planificación</title>
-  <desc id="desc">Icono de calendario en fondo azul con marca de verificación</desc>
-  <!-- fondo redondeado en color aproximado del ejemplo -->
-  <rect width="128" height="128" rx="18" fill="#2B4F86"/>
-  <!-- cuerpo del calendario -->
-  <rect x="18" y="26" width="92" height="76" rx="10" fill="#FFFFFF"/>
-  <!-- cabecera del calendario (misma azul) -->
-  <rect x="18" y="26" width="92" height="20" rx="8" fill="#2B4F86"/>
-  <!-- anillas superiores -->
-  <rect x="30" y="14" width="14" height="8" rx="2" fill="#2B4F86"/>
-  <rect x="84" y="14" width="14" height="8" rx="2" fill="#2B4F86"/>
-  <!-- líneas de la cuadrícula interior (sutiles) -->
-  <g fill="#2B4F86" opacity="0.95">
-    <rect x="26" y="56" width="18" height="12" rx="3"/>
-    <rect x="50" y="56" width="18" height="12" rx="3"/>
-    <rect x="74" y="56" width="18" height="12" rx="3"/>
-    <rect x="26" y="72" width="18" height="12" rx="3"/>
-    <rect x="50" y="72" width="18" height="12" rx="3"/>
-    <rect x="74" y="72" width="18" height="12" rx="3"/>
-  </g>
-  <!-- círculo con check para simbolizar 'planificación/tarea completada' -->
-  <circle cx="86" cy="96" r="16" fill="#2F855A"/>
-  <path d="M77.5 96.5l5.5 5.5L101 85" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#1a3a6b"/>
+  <text x="50%" y="50%" font-family="'Trebuchet MS', Verdana, sans-serif" font-size="13" font-weight="bold"
+        fill="white" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">PL</text>
 </svg>
