@@ -565,7 +565,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const prodTotalS = pAcum + pPend; // informativo
 
   // ── STOCK CIERRE S ──
-  const stkCierreS = stkActual - Math.max(0, fcstPend) + pPend;
+  const stkCierreS = stkActual - Math.max(0, fcstPend) + pPend - (pedidosPend[art.sku] || 0);
 
   // ── VENTA S+1 ──
   const fcstS2base = fcstS2[art.sku] || 0;
@@ -2696,7 +2696,7 @@ function PanelInstructivo() {
           <Formula>Pedido total S = Pedido acumulado (SAP) + Pedido pendiente</Formula>
 
           <H3>Stock cierre S</H3>
-          <Formula>Stock cierre S = Stock actual − max(0, Fcst pendiente) + Pedido pendiente S</Formula>
+          <Formula>Stock cierre S = Stock actual − max(0, Fcst pendiente) + Pedido pendiente S − Pedidos a facturar</Formula>
 
           <H3>Parámetros de abastecimiento (configurables en Maestro)</H3>
           <Formula>TER = Tiempo entre reposiciones (días)</Formula>
