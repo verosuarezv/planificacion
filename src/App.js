@@ -565,7 +565,7 @@ function calcRow(art, {fcstS, fcstS2, fcstS3, stockActual, ventaAcum, pedidosPen
   const prodTotalS = pAcum + pPend; // informativo
 
   // ── STOCK CIERRE S ──
-  const stkCierreS = stkActual - Math.max(0, fcstPend) + pPend - (pedidosPend[art.sku] || 0);
+  const stkCierreS = stkActual - Math.max(0, fcstPend) + pPend;
 
   // ── VENTA S+1 ──
   const fcstS2base = fcstS2[art.sku] || 0;
@@ -1582,11 +1582,11 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                 Descripción{sortIcon("desc")}
               </th>
               <th rowSpan={2} onClick={()=>toggleOrden("pasta")}
-                style={{padding:"8px 10px",background:"#f8fafc",fontWeight:600,
+                style={{padding:"8px 6px",background:"#f8fafc",fontWeight:600,
                 fontSize:10,color:orden.col==="pasta"?C.accent:C.muted,textTransform:"uppercase",
                 letterSpacing:"0.06em",borderBottom:`2px solid ${C.hairline}`,
                 position:"sticky",top:0,left:324,zIndex:5,textAlign:"left",
-                width:80,minWidth:80,cursor:"pointer",userSelect:"none",
+                width:60,minWidth:60,cursor:"pointer",userSelect:"none",
                 borderRight:`1px solid ${C.border}`}}>
                 Pasta{sortIcon("pasta")}
               </th>
@@ -1686,10 +1686,10 @@ function PanelPlan({ maestro, fcstActual, setFcstActual, fcstS2, setFcstS2, fcst
                   </td>
 
                   {/* PASTA */}
-                  <td style={{padding:"6px 10px",position:"sticky",left:324,zIndex:1,
+                  <td style={{padding:"4px 6px",position:"sticky",left:324,zIndex:1,
                     background:"inherit",borderRight:`1px solid ${C.border}`,
-                    width:80,minWidth:80,fontSize:11,color:C.textDim,fontFamily:"monospace",
-                    whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    width:60,minWidth:60,maxWidth:60,fontSize:10,color:C.muted,
+                    whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",textAlign:"center"}}>
                     {art.pasta||""}
                   </td>
 
@@ -2461,7 +2461,7 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
               ["TER (d)","ter",true],["SS (d)","seg",true],
               ["TER+SS vs TME (%)",null,true],
               ["Stk mín (d)",null,true],["Stk máx (d)",null,true],
-              ["Batch (kg) 🔐",null,true],["Batch mín (kg) 🔐",null,true],
+              ["Batch (kg) 🔐",null,true],["Batch mín (kg) 🔐",null,true],["Batch mín pasta 🔐",null,true],
               ["Leadtime (d) 🔐","lead",true],["Peso/un (kg)",null,true],["Batch (un)",null,true],
             ].map(([lbl,col,right])=>(
               <Th key={lbl} right={right} style={{cursor:col?"pointer":"default",userSelect:"none",whiteSpace:"nowrap"}}
@@ -2564,9 +2564,10 @@ function PanelMaestro({ maestro, setMaestro, politica, setPolitica }) {
                         :<span style={{color:C.muted}}>—</span>}
                     </Tv>;
                   })()}
-                  {/* BATCH, BATCH MIN, LEADTIME, PESO/UN, BATCH UN */}
+                  {/* BATCH, BATCH MIN, BATCH MIN PASTA, LEADTIME, PESO/UN, BATCH UN */}
                   <Tv right dim>{art.kgBatch.toLocaleString("es-UY")}</Tv>
                   <Tv right dim>{art.kgBatchMin.toLocaleString("es-UY")}</Tv>
+                  <Tv right dim>{(art.batchMinPasta||art.kgBatchMin).toLocaleString("es-UY")}</Tv>
                   <Tv right dim>{art.leadTime}</Tv>
                   <Tv right dim>{art.pesoUnitario||"—"}</Tv>
                   <Tv right dim>{art.unBatera||"—"}</Tv>
@@ -2795,7 +2796,7 @@ function PanelInstructivo() {
           <Formula>Pedido total S = Pedido acumulado (SAP) + Pedido pendiente</Formula>
 
           <H3>Stock cierre S</H3>
-          <Formula>Stock cierre S = Stock actual − max(0, Fcst pendiente) + Pedido pendiente S − Pedidos a facturar</Formula>
+          <Formula>Stock cierre S = Stock actual − max(0, Fcst pendiente) + Pedido pendiente S</Formula>
 
           <H3>Parámetros de abastecimiento (configurables en Maestro)</H3>
           <Formula>TER = Tiempo entre reposiciones (días)</Formula>
